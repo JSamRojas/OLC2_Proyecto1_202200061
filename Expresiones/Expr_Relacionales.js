@@ -2,6 +2,7 @@ import Expresion from "../Abstracto/Expresion.js";
 import Errores from "../Simbolo/Errores.js";
 import Tipo from "../Simbolo/Tipo.js";
 import DatoNativo from "../Simbolo/DatoNativo.js";
+import { ListaErrores } from "../Interfaz/Codigo_GUI.js";
 
 class Expr_Relacionales extends Expresion{
     constructor(operando1, operando2, operacion, Linea, Columna){
@@ -17,6 +18,12 @@ class Expr_Relacionales extends Expresion{
         if(opIzq instanceof Errores) return opIzq;
         opDer = this.operando2.Interpretar(arbol, tabla);
         if(opDer instanceof Errores) return opDer;
+
+        if(opIzq === null || opDer === null){
+            let error = new Errores("Error Semantico", "No se puede realizar una operacion con un valor null", this.Linea, this.Columna);
+            ListaErrores.push(error);
+            return null;
+        }
 
         switch (this.operacion) {
             case "MENOR_QUE":

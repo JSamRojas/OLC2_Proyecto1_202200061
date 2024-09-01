@@ -13,14 +13,13 @@ class Instr_Sout extends Instruccion {
 
     Interpretar(arbol, tabla){
         let consola = "";
-        this.expresion.forEach((element) => {
-            if (element === null){
-                console.log("Elemento nulo");
-            }
+
+        for(let element of this.expresion){
             let resultado = element.Interpretar(arbol, tabla);
-            if(resultado instanceof Errores) return resultado;
+            if (resultado === null) continue;
+            if (resultado instanceof Errores) return resultado;
             consola += resultado + " ";
-        });
+        }
         arbol.Print(consola);
         return null;
     }

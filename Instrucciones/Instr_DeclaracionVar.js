@@ -5,7 +5,7 @@ import DatoNativo from "../Simbolo/DatoNativo.js";
 import Errores from "../Simbolo/Errores.js";
 import Tipo from "../Simbolo/Tipo.js";
 import Simbolos from "../Simbolo/Simbolos.js";
-import { ListaSimbolos } from "../Interfaz/Codigo_GUI.js";
+import { ListaSimbolos, ListaErrores } from "../Interfaz/Codigo_GUI.js";
 
 class Instr_DeclaracionVar extends Instruccion {
     constructor(ID, valor, Tipo, Linea, Columna){
@@ -19,8 +19,32 @@ class Instr_DeclaracionVar extends Instruccion {
         let newSimbolo = new Simbolos;
 
         if(this.valor === null){
-            newSimbolo = new Simbolos(this.ID, this.Tipo, null, "Variable", this.Linea, this.Columna);
+            let valorNuevo = null;
+
+            switch (this.Tipo.getTipo()) {
+                case "ENTERO":
+                    valorNuevo = 0;
+                    break;
+                case "DECIMAL":
+                    valorNuevo = 0.0;
+                    break;
+                case "BOOLEANO":
+                    valorNuevo = true;
+                    break;
+                case "CARACTER":
+                    valorNuevo = '\u0000';
+                    break;
+                case "CADENA":
+                    valorNuevo = "";
+                    break;
+                default:
+                    return new Errores("Semantico", "Tipo de dato no valido", this.Linea, this.Columna);
+            }
+
+            newSimbolo = new Simbolos(this.ID, this.Tipo, valorNuevo, "Variable", this.Linea, this.Columna);
+
         } else {
+            
             let valorInterpretado = this.valor.Interpretar(arbol, tabla);
             if(valorInterpretado instanceof Errores) return valorInterpretado;
             
@@ -31,14 +55,18 @@ class Instr_DeclaracionVar extends Instruccion {
             if(this.valor.Tipo.getTipo() !== this.Tipo.getTipo()){
 
                 if(this.Tipo.getTipo() === "DECIMAL" && this.valor.Tipo.getTipo() === "ENTERO"){
-                    valorInterpretado = parseFloat(valorInterpretado);
+                    valorInterpretado = parseFloat(valorInterpretado).toFixed(1);
+                    newSimbolo = new Simbolos(this.ID, this.Tipo, valorInterpretado, "Variable", this.Linea, this.Columna);
                 } else {
-                    return new Errores("Semantico", "La variable es de tipo " + this.Tipo.getTipo().toString() + " y el valor asignado es de tipo " + this.valor.Tipo.getTipo().toString(), this.Linea, this.Columna);
+                    let error = new Errores("Semantico", "La variable es de tipo " + this.Tipo.getTipo().toString() + " y el valor asignado es de tipo " + this.valor.Tipo.getTipo().toString(), this.Linea, this.Columna);
+                    ListaErrores.push(error);
+                    newSimbolo = new Simbolos(this.ID, this.Tipo, null, "Variable", this.Linea, this.Columna);
+                    newSimbolo.setTipo(new Tipo(DatoNativo.VOID));
                 }
 
+            } else {
+                newSimbolo = new Simbolos(this.ID, this.Tipo, valorInterpretado, "Variable", this.Linea, this.Columna);
             }
-
-            newSimbolo = new Simbolos(this.ID, this.Tipo, valorInterpretado, "Variable", this.Linea, this.Columna);
         }
 
         if(this.Entorno === ""){
@@ -55,7 +83,7 @@ class Instr_DeclaracionVar extends Instruccion {
         ListaSimbolos.push(newSimbolo);
 
         return null;
-
+        
     }
 
     getEntorno(){

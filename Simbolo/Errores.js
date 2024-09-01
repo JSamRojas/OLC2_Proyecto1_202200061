@@ -1,4 +1,3 @@
-
 class Errores {
     constructor(tipo, descripcion, linea, columna) {
         this.tipo = tipo;
@@ -6,10 +5,6 @@ class Errores {
         this.linea = linea;
         this.columna = columna;
 
-    }
-
-    getNumero(){
-        return this.numero;
     }
 
     getTipo(){
@@ -29,7 +24,7 @@ class Errores {
     }
 
     toString(){
-        return `Error ${this.numero} = tipo: ${this.tipo} - descripcion: ${this.descripcion} - Linea: ${this.linea} - Columna: ${this.columna}`;
+        return `tipo: ${this.tipo} - descripcion: ${this.descripcion} - Linea: ${this.linea} - Columna: ${this.columna}`;
     }
 
 }

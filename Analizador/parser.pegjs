@@ -24,6 +24,11 @@
     OR: "OR",
     NOT: "NOT",
   };
+
+  const MOD_OP = {
+    AUMENTO: "AUMENTO",
+    DECREMENTO: "DECREMENTO",
+  }
 }
 
 //-------------------- Analisis Sintactico ----------------------
@@ -32,7 +37,7 @@ S
   = instrucciones
 
 instrucciones 
-  = inst:instruccion list:instruccionesp { return [inst].concat(list); }
+  = _ inst:instruccion list:instruccionesp { return [inst].concat(list); }
 
 instruccionesp 
   = list:instrucciones { return list; }
@@ -40,30 +45,113 @@ instruccionesp
 
 instruccion =  inst:print
   / inst:declaracion
+  / inst:asignacion
+  / inst:if_else_if
+  / inst:switch_case
+  / inst:while_state
+  / inst:break_state
 
+// GRAMATICA PARA EL SOUT
 print = SOUTtoken "(" _ expr:expresion_lista _ ")" _ ";" _ {
   const loc = location()?.start;
   return new Instr_Sout(expr, loc?.line, loc?.column);
 }
 
+// GRAMATICA PARA EL WHILE
+while_state
+  = Whiletoken _ "(" _ cond:expresion _ ")" _ "{" _ instr:instrucciones _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_While(cond, instr, loc?.line, loc?.column);
+  }
+
+// GRAMATICA PARA EL SWITCH CASE
+switch_case
+  = Switchtoken _ "(" _ cond:expresion _ ")" _ "{" _ cases:cases_switch _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_Switch(cond, cases, loc?.line, loc?.column);
+    }
+
+cases_switch
+  = _ cases:caso list:casoesp { return [cases].concat(list); }
+
+casoesp
+  = list:cases_switch { return list; }
+  / epsilon { return []; }
+
+caso
+  = Casetoken _ valor:expresion _ ":" _ instr:instrucciones _ {
+    const loc = location()?.start;
+    return new Casos_switch(valor, instr, true, loc?.line, loc?.column);
+    }
+
+  / Defaulttoken _ ":" _ instr:instrucciones _ {
+    const loc = location()?.start;
+    return new Casos_switch(null, instr, false, loc?.line, loc?.column);
+    }  
+
+// GRAMATICA PARA EL IF ELSE IF
+if_else_if
+  = Iftoken _ "(" _ condicion:expresion _ ")" _ "{" _ instIF:instrucciones _ "}" _ Elsetoken _ NextIF:if_else_if _ {
+    const loc = location()?.start;
+    return new Instr_If(condicion, instIF, null, NextIF, loc?.line, loc?.column);
+    }
+  
+  / Iftoken _ "(" _ condicion:expresion _ ")" _ "{" _ instIF:instrucciones _ "}" _ Elsetoken _ "{" _  instELSE:instrucciones _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_If(condicion, instIF, instELSE, null, loc?.line, loc?.column);
+    }
+  
+  / Iftoken _ "(" _ condicion:expresion _ ")" _ "{" _ instIF:instrucciones _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_If(condicion, instIF, null, null, loc?.line, loc?.column);
+    }
+
+// GRAMATICA PARA DECLARACION Y ASIGNACION DE VARIABLES
+asignacion
+  = id:ID _ "=" _ expr:expresion _ ";" _ {
+    const loc = location()?.start;
+    return new Instr_ModificacionVar(id, expr, null, loc?.line, loc?.column);
+    }
+
+  / id:ID _ operador:("+=" / "-=") _ expr:expresion _ ";" _ {
+    const loc = location()?.start;
+    if(operador === "+=") return new Instr_ModificacionVar(id, expr, MOD_OP.AUMENTO, loc?.line, loc?.column);
+    else if(operador === "-=") return new Instr_ModificacionVar(id, expr, MOD_OP.DECREMENTO, loc?.line, loc?.column);
+    }
+
 declaracion 
-  = type:tipo _ id:ID _ "=" expr:expresion _ ";" _ {
+  = "var" _ id:ID _ "=" _ expr:expresion _ ";" _ {
+    const loc = location()?.start;
+    return new Instr_DeclaracionVar(id, expr, new Tipo(DatoNativo.VOID), loc?.line, loc?.column);
+    }
+  
+  / type:tipo _ id:ID _ "=" _ expr:expresion _ ";" _ {
     const loc = location()?.start;
     return new Instr_DeclaracionVar(id, expr, type, loc?.line, loc?.column);
-  }
+    }
 
   / type:tipo _ id:ID _ ";" _ {
     const loc = location()?.start;
     return new Instr_DeclaracionVar(id, null, type, loc?.line, loc?.column);
-  }
+    }
 
-  / Vartoken _ id:ID _ "=" _ expr:expresion _ ";" _ {
+// GRAMATICA PARA EL BREAK
+break_state
+  = Breaktoken _ ";" _ {
     const loc = location()?.start;
-    return new Instr_DeclaracionVar(id, expr, new Tipo(DatoNativo.VOID), loc?.line, loc?.column);
+    return new Instr_Break(loc?.line, loc?.column);
   }
 
+// GRAMATICA PARA RECONOCER TODAS LAS EXPRESIONES
 expresion =
-  expresion_or
+  expresion_ternaria
+
+expresion_ternaria
+  = condicion:expresion_or _ "?" _ verdadero:expresion_or _ ":" _ falso:expresion_ternaria _ {
+    const loc = location()?.start;
+    return new Expr_Ternaria(condicion, verdadero, falso, loc?.line, loc?.column);
+  }
+  / expresion_or
 
 expresion_or
   = izq:expresion_and _ "||" _ der:expresion_and {
@@ -154,6 +242,10 @@ terminal
     const loc = location()?.start;
     return new Nativo(valor, new Tipo(DatoNativo.CARACTER), loc?.line, loc?.column);
   }
+  / valor:ID {
+    const loc = location()?.start;
+    return new Expr_AccesoVar(valor, loc?.line, loc?.column);
+  }
 
 tipo 
   = type:(_("int"/"float"/"string"/"boolean"/"char")_){
@@ -179,20 +271,20 @@ ComentMultilinea = "/*" (!"*/" .)* "*/"
 ComentLinea = "//" (!FindeLinea .)*
 
 _ "Espacio"
-  =  (Comentario / [ \t\n\r]+)*
+  =  (Comentario / [ \t\n\r]+)* { return null; }
 
 INTEGER "integer"
   = _ [0-9]+ { return parseInt(text(), 10);}
 
 DECIMAL "decimal"
-  = _ [0-9]+ "." [0-9]+ { return parseFloat(text(), 10);}
+  = _ [0-9]+ "." [0-9]+ { return parseFloat(text()).toFixed(1);}
 
 BOOLEAN "boolean"
   = _ Truetoken { return true; }
   / _ Falsetoken { return false; }
 
 CADENA "cadena"
-  = "\"" (ContenidoCadena / SecuenciaEscape)* "\""
+  = _ "\"" (ContenidoCadena / SecuenciaEscape)* "\""
   { var cad = text(); return cad.slice(1,-1); }
 
 CARACTER "caracter"
@@ -224,6 +316,13 @@ reservadas =
   Booleantoken
   Chartoken
   Vartoken
+  Iftoken
+  Elsetoken
+  Switchtoken
+  Casetoken
+  Defaulttoken
+  Breaktoken
+  Whiletoken
 
 // Tokens/Palabras Reservadas
 
@@ -237,3 +336,10 @@ Stringtoken = "string" !ID
 Booleantoken = "boolean" !ID
 Chartoken = "char" !ID
 Vartoken = "var" !ID
+Iftoken = "if" !ID
+Elsetoken = "else" !ID
+Switchtoken = "switch" !ID
+Casetoken = "case" !ID
+Defaulttoken = "default" !ID
+Breaktoken = "break" !ID
+Whiletoken = "while" !ID

@@ -6,7 +6,9 @@ import Arbol from "../Simbolo/Arbol.js";
 
 let tabCount = 0;
 let tabsData = {};
+let numeroError = 0;
 export let ListaSimbolos = [];
+export let ListaErrores = [];
 
 export function addTab() {
     tabCount++;
@@ -91,6 +93,9 @@ export function Ejecutar(){
 
         const ast = new Arbol(resultado);
         const tabla = new TablaSimbolos();
+        ListaErrores = [];
+        ListaSimbolos = [];
+        numeroError = 0;
         tabla.setNombre("Global");
         ast.setConsola("");
         ast.setTablaGlobal(tabla);
@@ -98,13 +103,16 @@ export function Ejecutar(){
         console.log(resultado);
 
         resultado.forEach((element) => {
-            if (element === null){
-                console.log("Elemento nulo");
-            }
-            element.Interpretar(ast, tabla);
+            let res = element.Interpretar(ast, tabla);
+            if(res instanceof Errores){
+                ListaErrores.push(res);
+            } 
         });
-        
-        const Consola = ast.getConsola(); 
+
+        let Consola = ast.getConsola();
+        ListaErrores.forEach((element) => {
+            Consola += `Error ${++numeroError} - ` + element.toString() + "\n";
+        });
         document.getElementById('output').innerText = Consola;
         
     } else {

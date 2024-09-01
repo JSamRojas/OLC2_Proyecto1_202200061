@@ -41,6 +41,16 @@ class TablaSimbolos{
         return false;
     }
 
+    getVariable(id){
+        for (let i = this; i !== null ; i = i.getTablaAnterior()) {
+            let buscar = i.TablaActual.has(id);
+            if(buscar){
+                return i.TablaActual.get(id);
+            }
+        }
+        return null;
+    }
+
 }
 
 export default TablaSimbolos;

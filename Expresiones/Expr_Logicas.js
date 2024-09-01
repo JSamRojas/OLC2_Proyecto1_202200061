@@ -2,6 +2,7 @@ import Expresion from "../Abstracto/Expresion.js";
 import Errores from "../Simbolo/Errores.js";
 import Tipo from "../Simbolo/Tipo.js";
 import DatoNativo from "../Simbolo/DatoNativo.js";
+import { ListaErrores } from "../Interfaz/Codigo_GUI.js";
 
 class Expr_Logicas extends Expresion{
     constructor(operandoUnico, operando1, operando2, operacion, Linea, Columna){
@@ -17,11 +18,21 @@ class Expr_Logicas extends Expresion{
         if(this.operandoUnico != null){
             Unico = this.operandoUnico.Interpretar(arbol, tabla);
             if(Unico instanceof Errores) return Unico;
+            if(Unico === null){
+                let error = new Errores("Error Semantico", "No se puede realizar una operacion con un valor null", this.Linea, this.Columna);
+                ListaErrores.push(error);
+                return null;
+            }
         } else {
             opIzq = this.operando1.Interpretar(arbol, tabla);
             if(opIzq instanceof Errores) return opIzq;
             opDer = this.operando2.Interpretar(arbol, tabla);
             if(opDer instanceof Errores) return opDer;
+            if(opIzq === null || opDer === null){
+                let error = new Errores("Error Semantico", "No se puede realizar una operacion con un valor null", this.Linea, this.Columna);
+                ListaErrores.push(error);
+                return null;
+            }
         }
 
         switch (this.operacion) {
