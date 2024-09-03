@@ -21,8 +21,7 @@ class Expr_Relacionales extends Expresion{
 
         if(opIzq === null || opDer === null){
             let error = new Errores("Error Semantico", "No se puede realizar una operacion con un valor null", this.Linea, this.Columna);
-            ListaErrores.push(error);
-            return null;
+            return error;
         }
 
         switch (this.operacion) {

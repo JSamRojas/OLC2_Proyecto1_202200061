@@ -22,6 +22,10 @@ class Instr_ModificacionVar extends Instruccion{
             return new Errores("Semantico", "La variable " + this.ID + " no existe", this.Linea, this.Columna);
         }
 
+        if(variable.Mutabilidad === false){
+            return new Errores("Semantico", "La variable " + this.ID + " es parte del foreach, por ende, no se puede modificar", this.Linea, this.Columna);
+        }
+
         if(this.modificador === null){
 
             let nuevoValor = this.expresion.Interpretar(arbol, tabla);
@@ -45,7 +49,7 @@ class Instr_ModificacionVar extends Instruccion{
 
             variable.setValor(nuevoValor);
 
-        } else {
+        } else if(this.modificador === "AUMENTO" || this.modificador === "DECREMENTO"){
 
             let nuevoValor = this.expresion.Interpretar(arbol, tabla);
             if(nuevoValor instanceof Errores) return nuevoValor;
@@ -85,7 +89,6 @@ class Instr_ModificacionVar extends Instruccion{
                         default:
                             return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y no se puede aumentar", this.Linea, this.Columna);
                     }
-                    break;
                 case "DECREMENTO":
                     switch (tipo1) {
                         case "ENTERO":
@@ -108,6 +111,38 @@ class Instr_ModificacionVar extends Instruccion{
                         default:
                             return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y no se puede aumentar", this.Linea, this.Columna);
                     }
+
+                default:
+                    return new Errores("Semantico", "El modificador " + this.modificador + " no es valido", this.Linea, this.Columna);
+            }
+
+        } else if (this.modificador === "AUMENTO_FOR" || this.modificador === "DECREMENTO_FOR"){
+
+            let valorActual = variable.getValor();
+            if(variable.getTipo().getTipo() === "ENTERO"){
+                switch (this.modificador) {
+                    case "AUMENTO_FOR":
+                        variable.setValor(parseInt(valorActual,10) + 1);
+                        break;
+                    case "DECREMENTO_FOR":
+                        variable.setValor(parseInt(valorActual,10) - 1);
+                        break;
+                    default:
+                        return new Errores("Semantico", "El modificador " + this.modificador + " no es valido", this.Linea, this.Columna);
+                }
+            } else if(variable.getTipo().getTipo() === "DECIMAL"){
+                switch (this.modificador) {
+                    case "AUMENTO_FOR":
+                        variable.setValor((parseFloat(valorActual) + 1.0).toFixed(1));
+                        break;
+                    case "DECREMENTO_FOR":
+                        variable.setValor((parseFloat(valorActual) - 1.0).toFixed(1));
+                        break;
+                    default:
+                        return new Errores("Semantico", "El modificador " + this.modificador + " no es valido", this.Linea, this.Columna);
+                }
+            } else {
+                return new Errores("Semantico", "La variable es de tipo " + variable.getTipo().getTipo() + " y no se puede aumentar o decrementar", this.Linea, this.Columna);
             }
 
         }
@@ -116,5 +151,6 @@ class Instr_ModificacionVar extends Instruccion{
 
     }
 }
+
 
 export default Instr_ModificacionVar;

@@ -28,7 +28,10 @@
   const MOD_OP = {
     AUMENTO: "AUMENTO",
     DECREMENTO: "DECREMENTO",
-  }
+    AUMENTO_FOR: "AUMENTO_FOR",
+    DECREMENTO_FOR: "DECREMENTO_FOR",
+  };
+
 }
 
 //-------------------- Analisis Sintactico ----------------------
@@ -44,11 +47,15 @@ instruccionesp
   / epsilon { return []; }
 
 instruccion =  inst:print
-  / inst:declaracion
-  / inst:asignacion
+  / inst:declaracion_var
+  / inst:asignacion_var
+  / inst:declaracion_array
+  / inst:asignacion_array
   / inst:if_else_if
   / inst:switch_case
   / inst:while_state
+  / inst:for_state
+  / inst:foreach_state
   / inst:break_state
 
 // GRAMATICA PARA EL SOUT
@@ -56,6 +63,36 @@ print = SOUTtoken "(" _ expr:expresion_lista _ ")" _ ";" _ {
   const loc = location()?.start;
   return new Instr_Sout(expr, loc?.line, loc?.column);
 }
+
+// GRAMATICA PARA EL FOR
+for_state
+  = Fortoken _ "(" _ decl:declaracion_var _ cond:expresion _ ";" _ mod:act_for _ ")" _ "{" _ instr:instrucciones _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_For(decl, cond, mod, instr, loc?.line, loc?.column);
+    }
+  / Fortoken _ "(" _ asig:asignacion_var _ cond:expresion _ ";" _ mod:act_for _ ")" _ "{" _ instr:instrucciones _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_For(asig, cond, mod, instr, loc?.line, loc?.column);
+    }
+
+act_for
+  = id:ID"++" {
+    const loc = location()?.start;
+    return new Instr_ModificacionVar(id, null, MOD_OP.AUMENTO_FOR, loc?.line, loc?.column);
+    }
+
+  / id:ID"--" {
+    const loc = location()?.start;
+    return new Instr_ModificacionVar(id, null, MOD_OP.DECREMENTO_FOR, loc?.line, loc?.column);
+  }
+
+// GRAMATICA PARA EL FOREACH
+
+foreach_state
+  = Fortoken _ "(" _ type:tipo _ id:ID _ ":" _ id2:ID _ ")" _ "{" _ instr:instrucciones _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_ForEach(id, id2, type, instr, loc?.line, loc?.column);
+    }
 
 // GRAMATICA PARA EL WHILE
 while_state
@@ -106,8 +143,35 @@ if_else_if
     return new Instr_If(condicion, instIF, null, null, loc?.line, loc?.column);
     }
 
+// GRAMATICA PARA DECLARACION Y ASIGNACION DE ARRAYS
+declaracion_array
+  = type:tipo _ "[" _ "]" _ id:ID _ "=" _ "{" _ expr:expresion_array _ "}" _ ";" _ {
+    const loc = location()?.start;
+    return new Instr_DeclaracionArray(id, type, expr, null, null, loc?.line, loc?.column);
+    }
+
+  / type:tipo _ "[" _ "]" _ id:ID _ "=" _ Newtoken _ type2:tipo _ "[" expr:expresion _ "]" _ ";" _ {
+    const loc = location()?.start;
+    if(type.getTipo() === type2.getTipo()){
+      return new Instr_DeclaracionArray(id, type, null, expr, null, loc?.line, loc?.column);
+    } else {
+      return new Errores("Error Semantico", "No se puede asignar un array de tipo " + type2.getTipo() + " a un array de tipo " + type.getTipo(), loc?.line, loc?.column);
+    }
+    }
+
+  / type:tipo _ "[" _ "]" _ id:ID _ "=" _ id2:ID _ ";" _ {
+    const loc = location()?.start;
+    return new Instr_DeclaracionArray(id, type, null, null, id2, loc?.line, loc?.column);
+    }
+
+asignacion_array
+  = id:ID _ "[" _ index:expresion _ "]" _ "=" _ expr:expresion _ ";" _ {
+    const loc = location()?.start;
+    return new Instr_ModificacionArray(id, index, expr, null, loc?.line, loc?.column);
+    }
+
 // GRAMATICA PARA DECLARACION Y ASIGNACION DE VARIABLES
-asignacion
+asignacion_var
   = id:ID _ "=" _ expr:expresion _ ";" _ {
     const loc = location()?.start;
     return new Instr_ModificacionVar(id, expr, null, loc?.line, loc?.column);
@@ -119,7 +183,7 @@ asignacion
     else if(operador === "-=") return new Instr_ModificacionVar(id, expr, MOD_OP.DECREMENTO, loc?.line, loc?.column);
     }
 
-declaracion 
+declaracion_var
   = "var" _ id:ID _ "=" _ expr:expresion _ ";" _ {
     const loc = location()?.start;
     return new Instr_DeclaracionVar(id, expr, new Tipo(DatoNativo.VOID), loc?.line, loc?.column);
@@ -215,6 +279,12 @@ expresion_primaria
   / "[" _ expr:expresion _ "]" { return expr; }
   / terminal
 
+expresion_array
+  = head:expresion rest:( _ "," _ expresion)* {
+    return [head, ...rest.map(r => r[3])];
+    }
+  / epsilon { return []; }
+
 expresion_lista
   = head:expresion rest:( _ "," _ expresion)* {
     return [head, ...rest.map(r => r[3])];
@@ -241,6 +311,10 @@ terminal
   / valor:CARACTER {
     const loc = location()?.start;
     return new Nativo(valor, new Tipo(DatoNativo.CARACTER), loc?.line, loc?.column);
+  }
+  / valor:ID _ "[" _ index:expresion _ "]" _ {
+    const loc = location()?.start;
+    return new Expr_AccesoArray(valor, index, loc?.line, loc?.column);
   }
   / valor:ID {
     const loc = location()?.start;
@@ -323,6 +397,8 @@ reservadas =
   Defaulttoken
   Breaktoken
   Whiletoken
+  Fortoken
+  Newtoken
 
 // Tokens/Palabras Reservadas
 
@@ -343,3 +419,5 @@ Casetoken = "case" !ID
 Defaulttoken = "default" !ID
 Breaktoken = "break" !ID
 Whiletoken = "while" !ID
+Fortoken = "for" !ID
+Newtoken = "new" !ID

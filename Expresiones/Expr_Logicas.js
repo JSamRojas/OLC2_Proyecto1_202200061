@@ -20,8 +20,7 @@ class Expr_Logicas extends Expresion{
             if(Unico instanceof Errores) return Unico;
             if(Unico === null){
                 let error = new Errores("Error Semantico", "No se puede realizar una operacion con un valor null", this.Linea, this.Columna);
-                ListaErrores.push(error);
-                return null;
+                return error;
             }
         } else {
             opIzq = this.operando1.Interpretar(arbol, tabla);
@@ -30,8 +29,7 @@ class Expr_Logicas extends Expresion{
             if(opDer instanceof Errores) return opDer;
             if(opIzq === null || opDer === null){
                 let error = new Errores("Error Semantico", "No se puede realizar una operacion con un valor null", this.Linea, this.Columna);
-                ListaErrores.push(error);
-                return null;
+                return error;
             }
         }
 

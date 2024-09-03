@@ -20,8 +20,7 @@ class Expr_Aritmeticas extends Expresion {
             if(Unico instanceof Errores) return Unico;
             if(Unico === null){
                 let error = new Errores("Error Semantico", "No se puede realizar una operacion con un valor null", this.Linea, this.Columna);
-                ListaErrores.push(error);
-                return null;
+                return error;
             }
         } else {
             opIzq = this.operando1.Interpretar(arbol, tabla);
@@ -30,8 +29,7 @@ class Expr_Aritmeticas extends Expresion {
             if(opDer instanceof Errores) return opDer;
             if(opIzq === null || opDer === null){
                 let error = new Errores("Error Semantico", "No se puede realizar una operacion con un valor null", this.Linea, this.Columna);
-                ListaErrores.push(error);
-                return null;
+                return error;
             }
         }
 
@@ -174,8 +172,7 @@ class Expr_Aritmeticas extends Expresion {
         const tipo2 = this.operando2.Tipo.getTipo();
         if(parseInt(op2, 10) === 0){
             let error = new Errores("Error Semantico", "No se puede dividir entre 0", this.Linea, this.Columna);
-            ListaErrores.push(error);
-            return null;
+            return error;
         } 
         
         switch (tipo1){
@@ -211,8 +208,7 @@ class Expr_Aritmeticas extends Expresion {
         const tipo2 = this.operando2.Tipo.getTipo();
         if(parseInt(op2, 10) === 0){
             let error = new Errores("Error Semantico", "No se puede realizar un modulo entre 0", this.Linea, this.Columna);
-            ListaErrores.push(error);
-            return null;
+            return error;
         } 
 
         switch (tipo1) {

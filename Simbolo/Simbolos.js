@@ -5,6 +5,7 @@ class Simbolos{
         this.Valor = Valor;
         this.TipoEstruct = TipoEstruct;
         this.Entorno = "";
+        this.Mutabilidad = true;
         this.linea = linea;
         this.Columna = Columna;
     }
@@ -59,6 +60,14 @@ class Simbolos{
 
     setEntorno(Entorno){
         this.Entorno = Entorno;
+    }
+
+    setMutabilidad(Mutabilidad){
+        this.Mutabilidad = Mutabilidad;
+    }
+
+    getMutabilidad(){
+        return this.Mutabilidad;
     }
 
 }

@@ -102,12 +102,20 @@ export function Ejecutar(){
 
         console.log(resultado);
 
-        resultado.forEach((element) => {
+        for (let element of resultado) {
+
+            if(element instanceof Errores){
+                ListaErrores.push(element);
+                continue;
+            }
+
             let res = element.Interpretar(ast, tabla);
+
             if(res instanceof Errores){
                 ListaErrores.push(res);
-            } 
-        });
+            }
+            
+        }
 
         let Consola = ast.getConsola();
         ListaErrores.forEach((element) => {
