@@ -26,11 +26,11 @@ class Expr_AccesoArray extends Expresion {
             return new Errores("Semantico", "La variable " + this.ID + " es inaccesible porque tiene valor null", this.Linea, this.Columna);
         }
 
-        let posicion = this.expresion.Interpretar(arbol, tabla);
+        let posicion = this.expresion[0].Interpretar(arbol, tabla);
 
         if(posicion instanceof Errores) return posicion;
 
-        if(this.expresion.Tipo.getTipo() !== "ENTERO"){
+        if(this.expresion[0].Tipo.getTipo() !== "ENTERO"){
             return new Errores("Semantico", "La posicion debe ser de tipo entero", this.Linea, this.Columna);
         }
 
@@ -38,9 +38,18 @@ class Expr_AccesoArray extends Expresion {
             return new Errores("Semantico", "La posicion " + posicion + " se sale de los limites del arreglo", this.Linea, this.Columna);
         }
 
-        this.Tipo.setTipo(simbolo.getTipo().getTipo());
-        return simbolo.getValor()[posicion];
+        if(simbolo.getTipoEstruct() === "Variable"){
+            return new Errores("Semantico", "La variable " + this.ID + " no es un arreglo o Matriz", this.Linea, this.Columna);
+        }
 
+        this.Tipo.setTipo(simbolo.getTipo().getTipo());
+
+        if(simbolo.getTipoEstruct() === "Matriz"){
+            return [...simbolo.getValor()[posicion]];
+        } else {
+            return simbolo.getValor()[posicion];
+        }
+        
     }
 
 }

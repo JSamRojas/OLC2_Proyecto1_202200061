@@ -6,6 +6,7 @@ import Errores from "../Simbolo/Errores.js";
 import Instr_DeclaracionVar from "./Instr_DeclaracionVar.js";
 import Tipo from "../Simbolo/Tipo.js";
 import Instr_Break from "./Instr_Break.js";
+import Instr_Continue from "./Instr_Continue.js";
 import Simbolos from "../Simbolo/Simbolos.js";
 
 class Instr_If extends Instruccion {
@@ -38,11 +39,15 @@ class Instr_If extends Instruccion {
 
                 if(element instanceof Instr_Break) return element;
 
+                if(element instanceof Instr_Continue) return element;
+
                 let resultado = element.Interpretar(arbol, newTabla);
 
                 if(resultado instanceof Errores) return resultado;
 
                 if(resultado instanceof Instr_Break) return resultado;
+
+                if(resultado instanceof Instr_Continue) return resultado;
 
             }
         } else { 
@@ -56,11 +61,15 @@ class Instr_If extends Instruccion {
 
                     if(element instanceof Instr_Break) return element;
 
+                    if(element instanceof Instr_Continue) return element;
+
                     let resultado = element.Interpretar(arbol, newTabla);
 
                     if(resultado instanceof Errores) return resultado;
 
                     if(resultado instanceof Instr_Break) return resultado;
+
+                    if(resultado instanceof Instr_Continue) return resultado;
                 }
 
             } else {
@@ -70,7 +79,9 @@ class Instr_If extends Instruccion {
 
                     if(resultado instanceof Errores) return resultado;
 
-                    if(inst instanceof Instr_Break) return inst;
+                    if(resultado instanceof Instr_Break) return resultado;
+
+                    if(resultado instanceof Instr_Continue) return resultado;
 
                 }
             }

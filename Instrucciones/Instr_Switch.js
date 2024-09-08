@@ -6,6 +6,7 @@ import Errores from "../Simbolo/Errores.js";
 import Instr_DeclaracionVar from "./Instr_DeclaracionVar.js";
 import Tipo from "../Simbolo/Tipo.js";
 import Instr_Break from "./Instr_Break.js";
+import Instr_Continue from "./Instr_Continue.js";
 import Simbolos from "../Simbolo/Simbolos.js";
 
 class Instr_Switch extends Instruccion {
@@ -41,11 +42,18 @@ class Instr_Switch extends Instruccion {
 
                     if((caso === valorCond) || (Condicion_cumplida)){
                         
+                        if(element.InstrCaso === null) {
+                            Condicion_cumplida = true;
+                            continue;
+                        }
+
                         for(let inst of element.InstrCaso){
 
                             if(inst instanceof Errores) return inst;
 
                             if(inst instanceof Instr_Break) return inst;
+
+                            if(inst instanceof Instr_Continue) return inst;
 
                             if(inst instanceof Instr_DeclaracionVar) inst.setEntorno(newTabla.getNombre());
 
@@ -55,7 +63,9 @@ class Instr_Switch extends Instruccion {
 
                             if(resultado instanceof Errores) return resultado;
 
-                            if(inst instanceof Instr_Break) return inst;
+                            if(resultado instanceof Instr_Break) return resultado;
+
+                            if(resultado instanceof Instr_Continue) return resultado;
 
                         }
 
@@ -69,6 +79,8 @@ class Instr_Switch extends Instruccion {
 
             } else {
 
+                if(element.InstrCaso === null) continue;
+
                 for(let inst of element.InstrCaso){
 
                     if(inst instanceof Errores) return inst;
@@ -77,13 +89,17 @@ class Instr_Switch extends Instruccion {
 
                     if(inst instanceof Instr_Break) return inst;
 
+                    if(inst instanceof Instr_Continue) return inst;
+
                     if(inst === null) return null;
 
                     let resultado = inst.Interpretar(arbol, newTabla);
 
                     if(resultado instanceof Errores) return resultado;
 
-                    if(inst instanceof Instr_Break) return inst;
+                    if(resultado instanceof Instr_Break) return resultado;
+
+                    if(resultado instanceof Instr_Continue) return resultado;
 
                 }
 

@@ -6,6 +6,7 @@ import Errores from "../Simbolo/Errores.js";
 import Instr_DeclaracionVar from "./Instr_DeclaracionVar.js";
 import Tipo from "../Simbolo/Tipo.js";
 import Instr_Break from "./Instr_Break.js";
+import Instr_Continue from "./Instr_Continue.js";
 
 class Instr_While extends Instruccion {
     constructor(condicion, InstruccionesWhile, Linea, Columna){
@@ -41,11 +42,15 @@ class Instr_While extends Instruccion {
 
                 if(i instanceof Instr_Break) return null;
 
+                if(i instanceof Instr_Continue) break;
+
                 let resultado = i.Interpretar(arbol, newTabla2);
 
                 if(resultado instanceof Errores) return resultado;
 
                 if(resultado instanceof Instr_Break) return null;
+
+                if(resultado instanceof Instr_Continue) break;
 
             }
 

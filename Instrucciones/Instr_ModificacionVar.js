@@ -39,17 +39,65 @@ class Instr_ModificacionVar extends Instruccion{
                 return new Errores("Semantico", "La variable " + this.ID + " es inaccesible porque tiene valor null", this.Linea, this.Columna);
             }
 
-            if(variable.getTipo().getTipo() !== this.expresion.Tipo.getTipo()){
-                if(variable.getTipo().getTipo() === "DECIMAL" && this.expresion.Tipo.getTipo() === "ENTERO"){
-                    nuevoValor = parseFloat(nuevoValor).toFixed(1);
-                } else {
+            if(variable.getTipoEstruct() === "Variable"){
+
+                if(variable.getTipo().getTipo() !== this.expresion.Tipo.getTipo()){
+                    if(variable.getTipo().getTipo() === "DECIMAL" && this.expresion.Tipo.getTipo() === "ENTERO"){
+                        nuevoValor = parseFloat(nuevoValor).toFixed(1);
+                    } else {
+                        return new Errores("Semantico", "La variable es de tipo " + variable.getTipo().getTipo() + " y el valor asignado es de tipo " + this.expresion.Tipo.getTipo(), this.Linea, this.Columna);
+                    }
+                }
+    
+                variable.setValor(nuevoValor);
+
+            } else if(variable.getTipoEstruct() === "Array"){
+
+                if(variable.getTipo().getTipo() !== this.expresion.Tipo.getTipo()){
                     return new Errores("Semantico", "La variable es de tipo " + variable.getTipo().getTipo() + " y el valor asignado es de tipo " + this.expresion.Tipo.getTipo(), this.Linea, this.Columna);
                 }
+
+                if(this.esMatriz(nuevoValor)){
+                    return new Errores("Semantico", "La variable " + this.ID + " es un arreglo y no se puede asignar una matriz", this.Linea, this.Columna);
+                }
+
+                if(!Array.isArray(nuevoValor)){
+                    return new Errores("Semantico", "La variable " + this.ID + " es un arreglo y no se puede asignar un valor", this.Linea, this.Columna);
+                }
+
+                if(nuevoValor.length !== variable.length){
+                    return new Errores("Semantico", "La variable " + this.ID + " es un arreglo y no se puede asignar un arreglo de diferente longitud", this.Linea, this.Columna);
+                }
+
+                variable.setValor([...nuevoValor]);
+
+            } else if(variable.getTipoEstruct() === "Matriz"){
+
+                if(variable.getTipo().getTipo() !== this.expresion.Tipo.getTipo()){
+                    return new Errores("Semantico", "La variable es de tipo " + variable.getTipo().getTipo() + " y el valor asignado es de tipo " + this.expresion.Tipo.getTipo(), this.Linea, this.Columna);
+                }
+
+                if(!this.esMatriz(nuevoValor)){
+                    return new Errores("Semantico", "La variable " + this.ID + " es una matriz y no se le puede asignar un array o un primitivo", this.Linea, this.Columna);
+                }
+
+                let dimen_Original = this.obtenerDimensiones(variable.getValor());
+
+                let dimen_Nuevas = this.obtenerDimensiones(nuevoValor);
+
+                if(dimen_Original.toString() === dimen_Nuevas.toString()){
+                    variable.setValor([...nuevoValor]);
+                } else {
+                    return new Errores("Semantico", "La variable " + this.ID + " es una matriz y no se le puede asignar una matriz de diferente dimension", this.Linea, this.Column);
+                }
+
             }
 
-            variable.setValor(nuevoValor);
-
         } else if(this.modificador === "AUMENTO" || this.modificador === "DECREMENTO"){
+
+            if(variable.getTipoEstruct() === "Array" || variable.getTipoEstruct() === "Matriz"){
+                return new Errores("Semantico", "La variable " + this.ID + " es un arreglo o matriz y no se puede aumentar o decrementar", this.Linea, this.Columna);
+            }
 
             let nuevoValor = this.expresion.Interpretar(arbol, tabla);
             if(nuevoValor instanceof Errores) return nuevoValor;
@@ -89,6 +137,7 @@ class Instr_ModificacionVar extends Instruccion{
                         default:
                             return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y no se puede aumentar", this.Linea, this.Columna);
                     }
+                break;
                 case "DECREMENTO":
                     switch (tipo1) {
                         case "ENTERO":
@@ -111,7 +160,7 @@ class Instr_ModificacionVar extends Instruccion{
                         default:
                             return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y no se puede aumentar", this.Linea, this.Columna);
                     }
-
+                break;
                 default:
                     return new Errores("Semantico", "El modificador " + this.modificador + " no es valido", this.Linea, this.Columna);
             }
@@ -150,6 +199,27 @@ class Instr_ModificacionVar extends Instruccion{
         return null;
 
     }
+
+    esMatriz(array){
+        if(!Array.isArray(array)){
+            return false;
+        }
+
+        return array.some(elemento => Array.isArray(elemento));
+    }
+
+    obtenerDimensiones(array){
+        let dimensiones = [];
+        let aux = array;
+
+        while(Array.isArray(aux)){
+            dimensiones.push(aux.length);
+            aux = aux[0];
+        }
+
+        return dimensiones;
+    }
+
 }
 
 

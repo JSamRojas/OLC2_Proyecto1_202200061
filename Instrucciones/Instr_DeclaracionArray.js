@@ -49,6 +49,10 @@ class Instr_DeclaracionArray extends Instruccion {
     
         } else if(this.Espacios_Arr === null && this.ID_Arr === null){
 
+            if(this.esMatriz(this.valores_Arr)){
+                return new Errores("Semantico", "No se puede asignar una matriz a un array", this.Linea, this.Columna);
+            }
+
             for(let element of this.valores_Arr){
 
                 if(element.Tipo.getTipo() !== this.Tipo.getTipo()){
@@ -65,10 +69,10 @@ class Instr_DeclaracionArray extends Instruccion {
 
         } else if(this.valores_Arr === null && this.ID_Arr === null){
 
-            let var_Espacios = this.Espacios_Arr.Interpretar(arbol, tabla);
+            let var_Espacios = this.Espacios_Arr[0].Interpretar(arbol, tabla);
             if(var_Espacios instanceof Errores) return var_Espacios;
 
-            if(this.Espacios_Arr.Tipo.getTipo() !== "ENTERO"){
+            if(this.Espacios_Arr[0].Tipo.getTipo() !== "ENTERO"){
                 return new Errores("Semantico", "El tipo de dato de los espacios no es un entero", this.Linea, this.Columna);
             }
 
@@ -140,6 +144,12 @@ class Instr_DeclaracionArray extends Instruccion {
         this.Entorno = Entorno;
     }
 
+    esMatriz(array){
+        if(!Array.isArray(array)){
+            return false;
+        }
+        return array.some(elemento => Array.isArray(elemento));
+    }
 }
 
 export default Instr_DeclaracionArray;

@@ -16,8 +16,10 @@ class Instr_Sout extends Instruccion {
 
         for(let element of this.expresion){
             let resultado = element.Interpretar(arbol, tabla);
-            if (resultado === null) continue;
             if (resultado instanceof Errores) return resultado;
+            if(typeof resultado === 'string'){
+                resultado = resultado.replace(/\\n/g, "\n");
+            }
             consola += resultado + " ";
         }
         arbol.Print(consola);

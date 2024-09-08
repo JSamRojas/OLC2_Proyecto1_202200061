@@ -3,6 +3,9 @@ import { parse } from "../Analizador/parser.js";
 import TablaSimbolos from "../Simbolo/TablaSimbolos.js";
 import Errores from "../Simbolo/Errores.js";
 import Arbol from "../Simbolo/Arbol.js";
+import Instr_Break from "../Instrucciones/Instr_Break.js";
+import Instr_Continue from "../Instrucciones/Instr_Continue.js";
+import Instr_DeclaracionStruct from "../Instrucciones/Instr_DeclaracionStruct.js";
 
 let tabCount = 0;
 let tabsData = {};
@@ -96,7 +99,7 @@ export function Ejecutar(){
         ListaErrores = [];
         ListaSimbolos = [];
         numeroError = 0;
-        tabla.setNombre("Global");
+        tabla.setNombre("GLOBAL");
         ast.setConsola("");
         ast.setTablaGlobal(tabla);
 
@@ -104,8 +107,25 @@ export function Ejecutar(){
 
         for (let element of resultado) {
 
+            if(element instanceof Instr_Break){
+                let error = new Errores("Semantico", "Break fuera de ciclo", element.Linea, element.Columna);
+                ListaErrores.push(error);
+                continue;
+            }
+
+            if(element instanceof Instr_Continue){
+                let error = new Errores("Semantico", "Continue fuera de ciclo", element.Linea, element.Columna);
+                ListaErrores.push(error);
+                continue;
+            }
+
             if(element instanceof Errores){
                 ListaErrores.push(element);
+                continue;
+            }
+
+            if(element instanceof Instr_DeclaracionStruct){
+                ast.addStructs(element);
                 continue;
             }
 
@@ -116,7 +136,7 @@ export function Ejecutar(){
             }
             
         }
-
+        
         let Consola = ast.getConsola();
         ListaErrores.forEach((element) => {
             Consola += `Error ${++numeroError} - ` + element.toString() + "\n";

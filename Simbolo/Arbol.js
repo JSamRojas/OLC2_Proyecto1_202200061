@@ -1,3 +1,5 @@
+import Instr_DeclaracionStructs from "../Instrucciones/Instr_DeclaracionStruct.js"
+
 class Arbol{
     constructor(Instrucciones){
         this.Instrucciones = Instrucciones;
@@ -51,6 +53,29 @@ class Arbol{
     setFuncYMetod(FuncYMetod){
         this.FuncYMetod = FuncYMetod;
     }
+
+    getStructs(ID){
+        for (let element of this.Structs) {
+            if(element instanceof Instr_DeclaracionStructs){
+                if(element.ID === ID){
+                    return element;
+                }
+            }
+        }
+        return null;
+    }
+
+    addStructs(struct){
+        if(struct instanceof Instr_DeclaracionStructs){
+            let encontro = this.getStructs(struct.ID);
+            if(encontro !== null){
+                this.Errores.push(new Errores("Semantico", "Ya existe un struct con el ID: " + struct.ID, struct.Linea, struct.Columna));
+            } else {
+                this.Structs.push(struct);
+            }
+        }
+    }
+
 }
 
 export default Arbol;

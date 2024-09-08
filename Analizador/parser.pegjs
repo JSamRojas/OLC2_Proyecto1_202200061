@@ -32,6 +32,10 @@
     DECREMENTO_FOR: "DECREMENTO_FOR",
   };
 
+  let contador = 0;
+  let numeros = [];
+  let atributosMap = new Map();
+
 }
 
 //-------------------- Analisis Sintactico ----------------------
@@ -51,18 +55,42 @@ instruccion =  inst:print
   / inst:asignacion_var
   / inst:declaracion_array
   / inst:asignacion_array
+  / inst:declaracion_struct
   / inst:if_else_if
   / inst:switch_case
   / inst:while_state
   / inst:for_state
   / inst:foreach_state
   / inst:break_state
+  / inst:continue_state
+  
 
 // GRAMATICA PARA EL SOUT
-print = SOUTtoken "(" _ expr:expresion_lista _ ")" _ ";" _ {
+print 
+  = SOUTtoken "(" _ expr:expresion_lista _ ")" _ ";" _ {
   const loc = location()?.start;
   return new Instr_Sout(expr, loc?.line, loc?.column);
-}
+  }
+// GRAMATICA PARA LA DECLARACION DE STRUCTS
+declaracion_struct
+  = _ Structtoken _ id:ID _ "{" _ atrib:limpiarMapa _ "}" _ ";" _ {
+    const loc = location()?.start;
+    let MapaGen = new Map();
+    MapaGen.set("Atributos", atrib);
+    return new Instr_DeclaracionStruct(id, MapaGen, loc?.line, loc?.column);
+  }
+
+limpiarMapa 
+  = list:lista_atrib {
+    let Mapaux = new Map(list);
+    atributosMap.clear();
+    return Mapaux;
+  }
+
+lista_atrib
+  = ( _ type:(tipo/ID) _ id:ID _ ";" _ {atributosMap.set(id, {tipo: type, valor: null});})+ {
+    return atributosMap;
+  }
 
 // GRAMATICA PARA EL FOR
 for_state
@@ -84,10 +112,20 @@ act_for
   / id:ID"--" {
     const loc = location()?.start;
     return new Instr_ModificacionVar(id, null, MOD_OP.DECREMENTO_FOR, loc?.line, loc?.column);
+    }
+
+  / id:ID _ "=" _ expr:expresion _ {
+    const loc = location()?.start;
+    return new Instr_ModificacionVar(id, expr, null, loc?.line, loc?.column);
+    }
+
+  / id:ID _ operador:("+="/"-=") _ expr:expresion _ {
+    const loc = location()?.start;
+    if(operador === "+=") return new Instr_ModificacionVar(id, expr, MOD_OP.AUMENTO, loc?.line, loc?.column);
+    else if(operador === "-=") return new Instr_ModificacionVar(id, expr, MOD_OP.DECREMENTO, loc?.line, loc?.column);
   }
 
 // GRAMATICA PARA EL FOREACH
-
 foreach_state
   = Fortoken _ "(" _ type:tipo _ id:ID _ ":" _ id2:ID _ ")" _ "{" _ instr:instrucciones _ "}" _ {
     const loc = location()?.start;
@@ -121,6 +159,11 @@ caso
     return new Casos_switch(valor, instr, true, loc?.line, loc?.column);
     }
 
+  / Casetoken _ valor:expresion ":" _ {
+    const loc = location()?.start;
+    return new Casos_switch(valor, null, true, loc?.line, loc?.column);
+    }
+
   / Defaulttoken _ ":" _ instr:instrucciones _ {
     const loc = location()?.start;
     return new Casos_switch(null, instr, false, loc?.line, loc?.column);
@@ -143,29 +186,48 @@ if_else_if
     return new Instr_If(condicion, instIF, null, null, loc?.line, loc?.column);
     }
 
-// GRAMATICA PARA DECLARACION Y ASIGNACION DE ARRAYS
+// GRAMATICA PARA DECLARACION Y ASIGNACION DE ARRAYS Y MATRICES
 declaracion_array
-  = type:tipo _ "[" _ "]" _ id:ID _ "=" _ "{" _ expr:expresion_array _ "}" _ ";" _ {
-    const loc = location()?.start;
-    return new Instr_DeclaracionArray(id, type, expr, null, null, loc?.line, loc?.column);
+  = type:tipo _ cont:lista_corchetes _ id:ID _ "=" _ expr:expresion_array _ ";" _ {
+      const loc = location()?.start;
+      if(cont === 1){
+        return new Instr_DeclaracionArray(id, type, expr, null, null, loc?.line, loc?.column);
+      } else {
+        return new Instr_DeclaracionMatriz(id, type, expr, null, null, loc?.line, loc?.column);
+      }
     }
 
-  / type:tipo _ "[" _ "]" _ id:ID _ "=" _ Newtoken _ type2:tipo _ "[" expr:expresion _ "]" _ ";" _ {
-    const loc = location()?.start;
-    if(type.getTipo() === type2.getTipo()){
-      return new Instr_DeclaracionArray(id, type, null, expr, null, loc?.line, loc?.column);
-    } else {
-      return new Errores("Error Semantico", "No se puede asignar un array de tipo " + type2.getTipo() + " a un array de tipo " + type.getTipo(), loc?.line, loc?.column);
-    }
+  / type:tipo _ cont:lista_corchetes _ id:ID _ "=" _ Newtoken _ type2:tipo _ cant:corchetes_numeros _ ";" _ {
+      const loc = location()?.start;
+      if(type.getTipo() === type2.getTipo()){
+        if(cont === 1 && cont === cant.length){
+          return new Instr_DeclaracionArray(id, type, null, [...cant], null, loc?.line, loc?.column);
+        } else if(cont > 1 && cont === cant.length){
+          return new Instr_DeclaracionMatriz(id, type, null, [...cant], null, loc?.line, loc?.column);
+        } else {
+          return new Errores("Error Semantico", "La cantidad de corchetes no coincide con la cantidad de dimensiones", loc?.line, loc?.column);
+        }
+      } else {
+        return new Errores("Error Semantico", "No se puede asignar un array de tipo " + type2.getTipo() + " a un array de tipo " + type.getTipo(), loc?.line, loc?.column);
+      }
     }
 
-  / type:tipo _ "[" _ "]" _ id:ID _ "=" _ id2:ID _ ";" _ {
-    const loc = location()?.start;
-    return new Instr_DeclaracionArray(id, type, null, null, id2, loc?.line, loc?.column);
+  / type:tipo _ cont:lista_corchetes _ id:ID _ "=" _ id2:ID _ ";" _ {
+      const loc = location()?.start;
+      if(cont === 1){
+        return new Instr_DeclaracionArray(id, type, null, null, id2, loc?.line, loc?.column);
+      } else {
+        return new Instr_DeclaracionMatriz(id, type, null, null, id2, loc?.line, loc?.column);
+      }
     }
 
 asignacion_array
-  = id:ID _ "[" _ index:expresion _ "]" _ "=" _ expr:expresion _ ";" _ {
+  = id:ID _ index:corchetes_numeros _ "=" _ expr:expresion _ ";" _ {
+    const loc = location()?.start;
+    return new Instr_ModificacionArray(id, index, expr, null, loc?.line, loc?.column);
+    }
+
+  / id:ID _ index:corchetes_numeros _ "=" _ expr:expresion_array _ ";" _ {
     const loc = location()?.start;
     return new Instr_ModificacionArray(id, index, expr, null, loc?.line, loc?.column);
     }
@@ -206,6 +268,13 @@ break_state
     return new Instr_Break(loc?.line, loc?.column);
   }
 
+// GRAMATICA PARA EL CONTINUE
+continue_state
+  = Continuetoken _ ";" _ {
+    const loc = location()?.start;
+    return new Instr_Continue(loc?.line, loc?.column);
+  }
+
 // GRAMATICA PARA RECONOCER TODAS LAS EXPRESIONES
 expresion =
   expresion_ternaria
@@ -218,21 +287,21 @@ expresion_ternaria
   / expresion_or
 
 expresion_or
-  = izq:expresion_and _ "||" _ der:expresion_and {
+  = izq:expresion_and _ "||" _ der:expresion_and _ {
     const loc = location()?.start;
     return new Expr_Logicas(null, izq, der, LOGICAL_OP.OR, loc?.line, loc?.column);
   }
   / expresion_and
 
 expresion_and
-  = izq:expresion_igualdad _ "&&" _ der:expresion_igualdad {
+  = izq:expresion_igualdad _ "&&" _ der:expresion_igualdad _ {
     const loc = location()?.start;
     return new Expr_Logicas(null, izq, der, LOGICAL_OP.AND, loc?.line, loc?.column);
   }
   / expresion_igualdad
 
 expresion_igualdad
-  = izq:expresion_relacional _ operador:("==" / "!=") _ der:expresion_relacional {
+  = izq:expresion_relacional _ operador:("==" / "!=") _ der:expresion_relacional _ {
     const loc = location()?.start;
     if(operador === "==") return new Expr_Relacionales(izq, der, RELATIONAL_OP.IGUAL, loc?.line, loc?.column);
     else if (operador === "!=") return new Expr_Relacionales(izq, der, RELATIONAL_OP.NO_IGUAL, loc?.line, loc?.column);
@@ -240,7 +309,7 @@ expresion_igualdad
   / expresion_relacional
 
 expresion_relacional
-  = izq:expresion_aditiva _ operador:("<=" / "<" / ">=" / ">") _ der:expresion_aditiva {
+  = izq:expresion_aditiva _ operador:("<=" / "<" / ">=" / ">") _ der:expresion_aditiva _ {
     const loc = location()?.start;
     if(operador === "<") return new Expr_Relacionales(izq, der, RELATIONAL_OP.MENOR_QUE, loc?.line, loc?.column);
     else if(operador === "<=") return new Expr_Relacionales(izq, der, RELATIONAL_OP.MENOR_IGUAL, loc?.line, loc?.column);
@@ -250,46 +319,76 @@ expresion_relacional
   / expresion_aditiva
 
 expresion_aditiva
-  = izq:expresion_multi _ operador:("+"/"-") _ der:expresion_multi {
-    const loc = location()?.start;
-    if(operador === "+") return new Expr_Aritmeticas(null, izq, der, ARITHMETIC_OP.SUMA, loc?.line, loc?.column);
-    else if(operador === "-") return new Expr_Aritmeticas(null, izq, der, ARITHMETIC_OP.MENOS, loc?.line, loc?.column);
+  = izq:expresion_multi tail:( _ ( "+" / "-" ) _ expresion_multi)* {
+    return tail.reduce(function(result, element){
+      const loc = location()?.start;
+      if(element[1] === "+") { return new Expr_Aritmeticas(null, result, element[3], ARITHMETIC_OP.SUMA, loc?.line, loc?.column); }
+      else if(element[1] === "-") { return new Expr_Aritmeticas(null, result, element[3], ARITHMETIC_OP.MENOS, loc?.line, loc?.column); }
+    }, izq);
   }
-  / expresion_multi
 
 expresion_multi
-  = izq:expresion_unaria _ operador:("*"/"/" / "%") _ der:expresion_unaria {
-    const loc = location()?.start;
-    if(operador === "*") return new Expr_Aritmeticas(null, izq, der, ARITHMETIC_OP.MULTIPLICACION, loc?.line, loc?.column);
-    else if(operador === "/") return new Expr_Aritmeticas(null, izq, der, ARITHMETIC_OP.DIVISION, loc?.line, loc?.column);
-    else if(operador === "%") return new Expr_Aritmeticas(null, izq, der, ARITHMETIC_OP.MODULO, loc?.line, loc?.column);
+  = izq:expresion_unaria tail:( _ ("*"/"/"/"%") _ expresion_unaria)* {
+    return tail.reduce(function(result, element){
+      const loc = location()?.start;
+      if(element[1] === "*") { return new Expr_Aritmeticas(null, result, element[3], ARITHMETIC_OP.MULTIPLICACION, loc?.line, loc?.column); }
+      else if(element[1] === "/") { return new Expr_Aritmeticas(null, result, element[3], ARITHMETIC_OP.DIVISION, loc?.line, loc?.column); }
+      else if(element[1] === "%") { return new Expr_Aritmeticas(null, result, element[3], ARITHMETIC_OP.MODULO, loc?.line, loc?.column); }
+    }, izq);
   }
-  / expresion_unaria
 
 expresion_unaria
-  = _ operador:("-"/"!") _ expr:expresion_unaria {
+  = _ "!" _ expr:expresion_unaria _ {
     const loc = location()?.start;
-    if(operador === "-") return new Expr_Aritmeticas(expr, null, null, ARITHMETIC_OP.NEGACION, loc?.line, loc?.column);
-    else if(operador === "!") return new Expr_Logicas(expr, null, null, LOGICAL_OP.NOT, loc?.line, loc?.column);
-  }
+    return new Expr_Logicas(expr, null, null, LOGICAL_OP.NOT, loc?.line, loc?.column);
+    }
+  / "-" _ expr:expresion_primaria _ { 
+    const loc = location()?.start;
+    return new Expr_Aritmeticas(expr, null, null, ARITHMETIC_OP.NEGACION, loc?.line, loc?.column); 
+    }
   / expresion_primaria
 
 expresion_primaria
-  = "(" _ expr:expresion _ ")" { return expr; }
-  / "[" _ expr:expresion _ "]" { return expr; }
+  = "(" _ expr:expresion _ ")" _ { return expr; }
+  / "[" _ expr:expresion _ "]" _ { return expr; }
   / terminal
 
 expresion_array
-  = head:expresion rest:( _ "," _ expresion)* {
-    return [head, ...rest.map(r => r[3])];
-    }
-  / epsilon { return []; }
+  = "{" _ head:valor_array tail:(_ "," _ valor_array)* _ "}" _ {
+    return [head].concat(tail.map(function(element) {return element[3];}));
+  }
 
 expresion_lista
   = head:expresion rest:( _ "," _ expresion)* {
     return [head, ...rest.map(r => r[3])];
   } 
   / epsilon { return []; }
+
+lista_corchetes 
+  = result:lista_corchetesEsp {
+    contador = 0;
+    return result;
+    }
+
+lista_corchetesEsp
+  = ( _ "[" _ "]" _  {contador += 1;})+ {
+    return contador;
+    }
+
+corchetes_numeros
+  = result:corchetes_numerosEsp {
+    numeros = [];
+    return result;
+    }
+
+corchetes_numerosEsp
+  = ( _ "[" _ expr:expresion _ "]" _ {numeros.push(expr);})+ {
+    return numeros;
+  }
+
+valor_array
+  = expresion_array
+    / expresion
 
 terminal
   = valor:DECIMAL {
@@ -312,9 +411,49 @@ terminal
     const loc = location()?.start;
     return new Nativo(valor, new Tipo(DatoNativo.CARACTER), loc?.line, loc?.column);
   }
-  / valor:ID _ "[" _ index:expresion _ "]" _ {
+  / _ Parsefloattoken _ "(" _ expr:expresion _ ")" _ {
     const loc = location()?.start;
-    return new Expr_AccesoArray(valor, index, loc?.line, loc?.column);
+    return new Expr_ParseFloat(expr, loc?.line, loc?.column);
+  }
+  / _ Parseinttoken _ "(" _ expr:expresion _ ")" _ {
+    const loc = location()?.start;
+    return new Expr_ParseInt(expr, loc?.line, loc?.column);
+  }
+  / _ Tostringtoken _ "(" _ expr:expresion _ ")" _ {
+    const loc = location()?.start;
+    return new Expr_ToString(expr, loc?.line, loc?.column);
+  }
+  / _ Tolowercasetoken _ "(" _ expr:expresion _ ")" _ {
+    const loc = location()?.start;
+    return new Expr_ToLowerCase(expr, loc?.line, loc?.column);
+  }
+  / _ Touppercasetoken _ "(" _ expr:expresion _ ")" _ {
+    const loc = location()?.start;
+    return new Expr_ToUpperCase(expr, loc?.line, loc?.column);
+  }
+  / _ Typeoftoken _ expr:expresion _ {
+    const loc = location()?.start;
+    return new Expr_TypeOf(expr, loc?.line, loc?.column);
+  }
+  / valor:ID _ "." _ Lengthtoken _ {
+    const loc = location()?.start;
+    return new Expr_Length(valor, loc?.line, loc?.column);
+  }
+  / valor:ID _ "." _ Jointoken _ "(" _ ")" _ {
+    const loc = location()?.start;
+    return new Expr_Join(valor, loc?.line, loc?.column);
+  }
+  / valor:ID _ "." _ IndexOftoken _ "(" _ expr:expresion _ ")" _ {
+    const loc = location()?.start;
+    return new Expr_IndexOf(valor, expr, loc?.line, loc?.column);
+  }
+  / valor:ID _ pos:corchetes_numeros _ {
+    const loc = location()?.start;
+    if(pos.length === 1){
+      return new Expr_AccesoArray(valor, [...pos], loc?.line, loc?.column);
+    } else {
+      return new Expr_AccesoMatriz(valor, [...pos], loc?.line, loc?.column);
+    }
   }
   / valor:ID {
     const loc = location()?.start;
@@ -365,13 +504,13 @@ CARACTER "caracter"
   = [\'][^\n\'][\'] { var c = text(); return c[1]; }
 
 SecuenciaEscape
-  = "\\" "\""  { return "\""; }
-  / "\\" "\\"  { return "\\"; }
-  / "\\" "n"   { return "\n"; }
-  / "\\" "t"   { return "\t"; }
-  / "\\" "r"   { return "\r"; }
-  / "\\" "f"   { return "\f"; }
-  / "\\" "'"   { return "'"; }
+  = "\\\""  { return "\""; }
+  / "\\\\"  { return "\\"; }
+  / "\\n"   { return "\n"; }
+  / "\\t"   { return "\t"; }
+  / "\\r"   { return "\r"; }
+  / "\\f"   { return "\f"; }
+  / "\\'"   { return "'"; }
 
 ContenidoCadena = [^\\"\n\r]+ { return text(); }
 
@@ -399,6 +538,17 @@ reservadas =
   Whiletoken
   Fortoken
   Newtoken
+  Continuetoken
+  IndexOftoken
+  Jointoken
+  Lengthtoken
+  Parseinttoken
+  Parsefloattoken
+  Tostringtoken
+  Tolowercasetoken
+  Touppercasetoken
+  Typeoftoken
+  Structtoken
 
 // Tokens/Palabras Reservadas
 
@@ -418,6 +568,17 @@ Switchtoken = "switch" !ID
 Casetoken = "case" !ID
 Defaulttoken = "default" !ID
 Breaktoken = "break" !ID
+Continuetoken = "continue" !ID
 Whiletoken = "while" !ID
 Fortoken = "for" !ID
 Newtoken = "new" !ID
+IndexOftoken = "indexOf" !ID
+Jointoken = "join" !ID
+Lengthtoken = "length" !ID
+Parseinttoken = "parseInt" !ID
+Parsefloattoken = "parsefloat" !ID
+Tostringtoken = "toString" !ID
+Tolowercasetoken = "toLowerCase" !ID
+Touppercasetoken = "toUpperCase" !ID
+Typeoftoken = "typeof" !ID
+Structtoken = "struct" !ID

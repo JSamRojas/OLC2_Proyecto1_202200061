@@ -20,7 +20,9 @@ class Expr_AccesoVar extends Expresion {
         }
 
         if(valido.Tipo.getTipo() === "VOID"){
-            return new Errores("Semantico", "La variable " + this.ID + " es inaccesible porque tiene valor null", this.Linea, this.Columna);
+            let error = new Errores("Semantico", "La variable " + this.ID + " es inaccesible porque tiene valor null", this.Linea, this.Columna);
+            ListaErrores.push(error);
+            return null;
         } 
         this.Tipo.setTipo(valido.getTipo().getTipo());
         return valido.getValor();
