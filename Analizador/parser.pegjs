@@ -51,11 +51,13 @@ instruccionesp
   / epsilon { return []; }
 
 instruccion =  inst:print
+  / inst:declaracion_struct
+  / inst:instancia_struct
+  / inst:asignacion_struct
   / inst:declaracion_var
   / inst:asignacion_var
   / inst:declaracion_array
   / inst:asignacion_array
-  / inst:declaracion_struct
   / inst:if_else_if
   / inst:switch_case
   / inst:while_state
@@ -66,7 +68,7 @@ instruccion =  inst:print
   
 
 // GRAMATICA PARA EL SOUT
-print 
+print
   = SOUTtoken "(" _ expr:expresion_lista _ ")" _ ";" _ {
   const loc = location()?.start;
   return new Instr_Sout(expr, loc?.line, loc?.column);
@@ -75,8 +77,7 @@ print
 declaracion_struct
   = _ Structtoken _ id:ID _ "{" _ atrib:limpiarMapa _ "}" _ ";" _ {
     const loc = location()?.start;
-    let MapaGen = new Map();
-    MapaGen.set("Atributos", atrib);
+    let MapaGen = new Map(atrib);
     return new Instr_DeclaracionStruct(id, MapaGen, loc?.line, loc?.column);
   }
 
@@ -88,10 +89,46 @@ limpiarMapa
   }
 
 lista_atrib
+
   = ( _ type:(tipo/ID) _ id:ID _ ";" _ {atributosMap.set(id, {tipo: type, valor: null});})+ {
     return atributosMap;
   }
 
+// GRAMATICA PARA LA INSTANCIA DE STRUCTS
+instancia_struct
+  = Vartoken _ idvar:ID _ "=" _ idstruct:ID _ "{" _ valores:valores_struct _ "}" _ ";" _ {
+      const loc = location()?.start;
+      return new Instr_InstanciaStruct(idstruct, idvar, valores, loc?.line, loc?.column);
+    }
+  / idstruct1:ID _ idvar:ID _ "=" _ idstuct2:ID _ "{" _ valores:valores_struct _ "}" _ ";" _ {
+      const loc = location()?.start;
+      if(idstruct1 !== idstuct2){
+        return new Errores("Error Semantico", "No se puede asignar un struct de tipo " + idstuct2 + " a un struct de tipo " + idstruct1, loc?.line, loc?.column);
+      }
+      return new Instr_InstanciaStruct(idstuct2, idvar, valores, loc?.line, loc?.column);
+    }
+
+valores_struct
+  = head:atributo _ rest:( _ "," _ atributo)* {
+    return [head, ...rest.map(r => r[3])];
+  }
+
+atributo
+  = clave:ID _ ":" _ valor:(expr_atrib/expresion) _ {
+    return {key: clave, value: valor};
+  }
+expr_atrib
+
+  = idstruct:ID _ "{" _ valores:valores_struct _ "}" _ {
+      return [idstruct, [...valores]];
+    }
+
+// GRAMATICA PARA LA ASIGNACION DE STRUCTS
+asignacion_struct
+  = head:ID rest:( _ "." _ ID)+ _ "=" _ expr:expresion _ ";" _ {
+    const loc = location()?.start;
+    return new Instr_ModificacionStruct(head, [...rest.map(r => r[3])], expr, loc?.line, loc?.column);
+  }
 // GRAMATICA PARA EL FOR
 for_state
   = Fortoken _ "(" _ decl:declaracion_var _ cond:expresion _ ";" _ mod:act_for _ ")" _ "{" _ instr:instrucciones _ "}" _ {
@@ -411,6 +448,10 @@ terminal
     const loc = location()?.start;
     return new Nativo(valor, new Tipo(DatoNativo.CARACTER), loc?.line, loc?.column);
   }
+  / _ Objectkeystoken _ "(" _ id:ID _ ")" _ {
+    const loc = location()?.start;
+    return new Expr_ObjectKeys(id, loc?.line, loc?.column);
+  }
   / _ Parsefloattoken _ "(" _ expr:expresion _ ")" _ {
     const loc = location()?.start;
     return new Expr_ParseFloat(expr, loc?.line, loc?.column);
@@ -454,6 +495,10 @@ terminal
     } else {
       return new Expr_AccesoMatriz(valor, [...pos], loc?.line, loc?.column);
     }
+  }
+  / _ head:ID rest:( _ "." _ ID)+ _ {
+    const loc = location()?.start;
+    return new Expr_AccesoStruct(head, [...rest.map(r => r[3])], loc?.line, loc?.column);
   }
   / valor:ID {
     const loc = location()?.start;
@@ -549,6 +594,7 @@ reservadas =
   Touppercasetoken
   Typeoftoken
   Structtoken
+  Objectkeystoken
 
 // Tokens/Palabras Reservadas
 
@@ -582,3 +628,4 @@ Tolowercasetoken = "toLowerCase" !ID
 Touppercasetoken = "toUpperCase" !ID
 Typeoftoken = "typeof" !ID
 Structtoken = "struct" !ID
+Objectkeystoken = "Object.keys" !ID

@@ -2,10 +2,7 @@ import Instruccion from "../Abstracto/Instruccion.js";
 import Arbol from "../Simbolo/Arbol.js";
 import TablaSimbolos from "../Simbolo/TablaSimbolos.js";
 import DatoNativo from "../Simbolo/DatoNativo.js";
-import Errores from "../Simbolo/Errores.js";
 import Tipo from "../Simbolo/Tipo.js";
-import Simbolos from "../Simbolo/Simbolos.js";
-import { ListaSimbolos, ListaErrores } from "../Interfaz/Codigo_GUI.js";
 
 class Instr_DeclaracionStruct extends Instruccion {
     constructor(ID, Atributos, Linea, Columna) {
@@ -16,23 +13,25 @@ class Instr_DeclaracionStruct extends Instruccion {
 
     Interpretar(arbol, tabla) {
 
+        let new_Attribs = this.Inter_Struct(arbol, this.Atributos);
+        this.Atributos = new_Attribs;
+        return null;
 
     }
 
-    Inter_Struct(arbol, ID, Attribs){
+    Inter_Struct(arbol, Attribs){
 
-        let MapaPrincipal = new Map();
-        let MapaAtributos = new Map();
-
-        for (let map of Attribs) {
-            for (let clave of map.keys()) {
-                let atributos = map.get(clave);
-                let busqueda = arbol.getStructs(atributos.tipo);
-                if(busqueda instanceof Instr_DeclaracionStruct){
-                    let Valores = this.Inter_Struct(arbol, atributos.tipo, busqueda.Atributos);
-                }
+        for (let clave of Attribs.keys()) {
+            let tipo_atr = Attribs.get(clave).tipo;
+            let valor_atr = Attribs.get(clave);
+            let busqueda = arbol.getStructs(tipo_atr);
+            if(busqueda !== null){
+                let newVal = this.Inter_Struct(arbol, busqueda.Atributos);
+                valor_atr.valor = newVal;
             }
         }
+
+        return Attribs;
 
     }
 

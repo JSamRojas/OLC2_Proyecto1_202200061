@@ -125,6 +125,7 @@ export function Ejecutar(){
             }
 
             if(element instanceof Instr_DeclaracionStruct){
+                element.Interpretar(ast, tabla);
                 ast.addStructs(element);
                 continue;
             }
@@ -136,6 +137,8 @@ export function Ejecutar(){
             }
             
         }
+
+        console.log(ListaSimbolos);
         
         let Consola = ast.getConsola();
         ListaErrores.forEach((element) => {
