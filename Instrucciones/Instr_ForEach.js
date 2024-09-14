@@ -8,6 +8,7 @@ import Instr_DeclaracionVar from "./Instr_DeclaracionVar.js";
 import Tipo from "../Simbolo/Tipo.js";
 import Instr_Break from "./Instr_Break.js";
 import Instr_Continue from "./Instr_Continue.js";
+import Expr_Return from "../Expresiones/Expr_Return.js";
 import { ListaSimbolos, ListaErrores } from "../Interfaz/Codigo_GUI.js";
 
 class Instr_ForEach extends Instruccion {
@@ -66,6 +67,11 @@ class Instr_ForEach extends Instruccion {
                 if(inst instanceof Instr_Break) return null;
 
                 if(inst instanceof Instr_Continue) break;
+
+                if(inst instanceof Expr_Return) {
+                    inst.setTablaEntorno(newTabla2);
+                    return inst;
+                }
     
                 let resultado = inst.Interpretar(arbol, newTabla2);
     
@@ -74,6 +80,8 @@ class Instr_ForEach extends Instruccion {
                 if(resultado instanceof Instr_Break) return null;
 
                 if(resultado instanceof Instr_Continue) break;
+
+                if(resultado instanceof Expr_Return) return resultado;
 
             }
 

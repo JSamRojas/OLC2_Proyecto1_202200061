@@ -4,6 +4,7 @@ import TablaSimbolos from "../Simbolo/TablaSimbolos.js";
 import DatoNativo from "../Simbolo/DatoNativo.js";
 import Errores from "../Simbolo/Errores.js";
 import Tipo from "../Simbolo/Tipo.js";
+import Expr_AccesoVar from "./Expr_AccesoVar.js";
 
 class Expr_TypeOf extends Expresion {
     constructor(expresion, Linea, Columna){
@@ -30,6 +31,11 @@ class Expr_TypeOf extends Expresion {
                 return "string";
             case "CARACTER":
                 return "char";
+            case "STRUCT":
+                if(this.expresion instanceof Expr_AccesoVar){
+                    let simbolo = tabla.getVariable(this.expresion.ID);
+                    return simbolo.getTipoEstruct();
+                }
             default:
                 return new Errores("Semantico", "No se puede obtener el tipo de la expresion", this.Linea, this.Columna);
         }

@@ -51,6 +51,8 @@ instruccionesp
   / epsilon { return []; }
 
 instruccion =  inst:print
+  / inst:declaracion_funcion
+  / inst:llamada_funcion
   / inst:declaracion_struct
   / inst:instancia_struct
   / inst:asignacion_struct
@@ -65,6 +67,7 @@ instruccion =  inst:print
   / inst:foreach_state
   / inst:break_state
   / inst:continue_state
+  / inst:return_state
   
 
 // GRAMATICA PARA EL SOUT
@@ -73,6 +76,47 @@ print
   const loc = location()?.start;
   return new Instr_Sout(expr, loc?.line, loc?.column);
   }
+// GRAMATICA PARA LA DECLARACION DE FUNCIONES
+declaracion_funcion
+  = type:tipo _ id:ID _ "(" _ params:lista_params _ ")" _ "{" _ instr:instrucciones _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_Funcion(id, null, instr, params, "Variable", type, loc?.line, loc?.column);
+    }
+  / type:tipo _ "[" _ "]" _ id:ID _ "(" _ params:lista_params _ ")" _ "{" _ instr: instrucciones _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_Funcion(id, null, instr, params, "Array", type, loc?.line, loc?.column);
+    }
+  / tipofunc:ID _ id:ID _ "(" _ params:lista_params _ ")" _ "{" _ instr:instrucciones _ "}" _ {
+    const loc = location()?.start;
+    return new Instr_Funcion(id, tipofunc, instr, params, "Variable", new Tipo(DatoNativo.STRUCT), loc?.line, loc?.column);
+    }
+
+lista_params
+  = head:parametro rest:( _ "," _ parametro)* {
+    return [head, ...rest.map(r => r[3])];
+  }
+  / epsilon { return []; }
+
+parametro 
+  = type:(tipo/ID) _ id:ID {
+    return {identificador: id, tipoDato: type, tipoEstruct: "Variable"};
+  }
+  / type:(tipo/ID) _ "[" _ "]" _ id:ID {
+    return {identificador: id, tipoDato: type, tipoEstruct: "Array"};
+  }
+// GRAMATICA PARA LA LLAMADA DE FUNCIONES
+llamada_funcion
+  = id:ID _ "(" _ params:parametros_funcion _ ")" _ ";" _ {
+    const loc = location()?.start;
+    return new Instr_LlamadaFunc(id, params, false, loc?.line, loc?.column);
+  }
+
+parametros_funcion
+  = head:expresion rest:(_ "," _ expresion)* {
+    return [head, ...rest.map(r => r[3])];
+  }
+  / epsilon { return []; }
+
 // GRAMATICA PARA LA DECLARACION DE STRUCTS
 declaracion_struct
   = _ Structtoken _ id:ID _ "{" _ atrib:limpiarMapa _ "}" _ ";" _ {
@@ -312,6 +356,17 @@ continue_state
     return new Instr_Continue(loc?.line, loc?.column);
   }
 
+
+// GRAMATICA PARA EL RETURN
+return_state
+  = Returntoken _ expr:expresion _ ";" _ {
+    const loc = location()?.start;
+    return new Expr_Return(expr, loc?.line, loc?.column);
+    }
+  / Returntoken _ ";" _ {
+    const loc = location()?.start;
+    return new Expr_Return(null, loc?.line, loc?.column);
+    }
 // GRAMATICA PARA RECONOCER TODAS LAS EXPRESIONES
 expresion =
   expresion_ternaria
@@ -423,6 +478,12 @@ corchetes_numerosEsp
     return numeros;
   }
 
+call_func_expr
+  = id:ID _ "(" _ params:parametros_funcion _ ")" _ {
+    const loc = location()?.start;
+    return new Instr_LlamadaFunc(id, params, true, loc?.line, loc?.column);
+  }
+
 valor_array
   = expresion_array
     / expresion
@@ -496,22 +557,24 @@ terminal
       return new Expr_AccesoMatriz(valor, [...pos], loc?.line, loc?.column);
     }
   }
-  / _ head:ID rest:( _ "." _ ID)+ _ {
+  / _ id:(call_func_expr/ID) rest:( _ "." _ (call_func_expr/ID))+ _ {
     const loc = location()?.start;
-    return new Expr_AccesoStruct(head, [...rest.map(r => r[3])], loc?.line, loc?.column);
+    return new Expr_AccesoStruct(id, [...rest.map(r => r[3])], loc?.line, loc?.column);
   }
+  / list:call_func_expr { return list; }
   / valor:ID {
     const loc = location()?.start;
     return new Expr_AccesoVar(valor, loc?.line, loc?.column);
   }
 
 tipo 
-  = type:(_("int"/"float"/"string"/"boolean"/"char")_){
+  = type:(_("int"/"float"/"string"/"boolean"/"char"/"void")_){
     if(type[1] === "int") return (new Tipo(DatoNativo.ENTERO));
     else if(type[1] === "float") return (new Tipo(DatoNativo.DECIMAL));
     else if(type[1] === "string") return (new Tipo(DatoNativo.CADENA));
     else if(type[1] === "boolean") return (new Tipo(DatoNativo.BOOLEANO));
     else if(type[1] === "char") return (new Tipo(DatoNativo.CARACTER));
+    else if(type[1] === "void") return (new Tipo(DatoNativo.VOID));
   }
 
 //-------------------- Analisis Lexico ----------------------
@@ -595,6 +658,8 @@ reservadas =
   Typeoftoken
   Structtoken
   Objectkeystoken
+  Voidtoken
+  Returntoken
 
 // Tokens/Palabras Reservadas
 
@@ -607,6 +672,7 @@ Floattoken = "float"  !ID
 Stringtoken = "string" !ID
 Booleantoken = "boolean" !ID
 Chartoken = "char" !ID
+Voidtoken = "void" !ID
 Vartoken = "var" !ID
 Iftoken = "if" !ID
 Elsetoken = "else" !ID
@@ -615,6 +681,7 @@ Casetoken = "case" !ID
 Defaulttoken = "default" !ID
 Breaktoken = "break" !ID
 Continuetoken = "continue" !ID
+Returntoken = "return" !ID
 Whiletoken = "while" !ID
 Fortoken = "for" !ID
 Newtoken = "new" !ID

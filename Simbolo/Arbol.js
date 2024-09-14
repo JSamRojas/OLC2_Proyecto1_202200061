@@ -1,4 +1,6 @@
 import Instr_DeclaracionStructs from "../Instrucciones/Instr_DeclaracionStruct.js"
+import Instr_Funcion from "../Instrucciones/Instr_Funcion.js";
+import Errores from "./Errores.js";
 
 class Arbol{
     constructor(Instrucciones){
@@ -6,7 +8,7 @@ class Arbol{
         this.consola = "";
         this.TablaGlobal = new Map();
         this.Errores = [];
-        this.FuncYMetod = [];
+        this.Funciones = [];
         this.Structs = [];
     }
 
@@ -46,12 +48,26 @@ class Arbol{
         this.consola += Valor + "\n";
     }
 
-    getFuncYMetod(){
-        return this.FuncYMetod;
+    addFuncion(funcion){
+        if(funcion instanceof Instr_Funcion){
+            var encontro = this.getFuncion(funcion.ID);
+            if(encontro !== null){
+                this.Errores.push(new Errores("Semantico", "Ya existe una funcion con el ID: " + funcion.ID, funcion.Linea, funcion.Columna));
+            } else {
+                this.Funciones.push(funcion);
+            }
+        }
     }
 
-    setFuncYMetod(FuncYMetod){
-        this.FuncYMetod = FuncYMetod;
+    getFuncion(ID){
+        for (let element of this.Funciones){
+            if(element instanceof Instr_Funcion){
+                if(element.ID === ID){
+                    return element;
+                }
+            }
+        }
+        return null;
     }
 
     getStructs(ID){

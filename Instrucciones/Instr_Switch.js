@@ -7,6 +7,7 @@ import Instr_DeclaracionVar from "./Instr_DeclaracionVar.js";
 import Tipo from "../Simbolo/Tipo.js";
 import Instr_Break from "./Instr_Break.js";
 import Instr_Continue from "./Instr_Continue.js";
+import Expr_Return from "../Expresiones/Expr_Return.js";
 import Simbolos from "../Simbolo/Simbolos.js";
 
 class Instr_Switch extends Instruccion {
@@ -55,6 +56,11 @@ class Instr_Switch extends Instruccion {
 
                             if(inst instanceof Instr_Continue) return inst;
 
+                            if(inst instanceof Expr_Return) {
+                                inst.setTablaEntorno(newTabla);
+                                return inst;
+                            }
+
                             if(inst instanceof Instr_DeclaracionVar) inst.setEntorno(newTabla.getNombre());
 
                             if(inst === null) return null;
@@ -66,6 +72,8 @@ class Instr_Switch extends Instruccion {
                             if(resultado instanceof Instr_Break) return resultado;
 
                             if(resultado instanceof Instr_Continue) return resultado;
+
+                            if(resultado instanceof Expr_Return) return resultado;
 
                         }
 
@@ -91,6 +99,11 @@ class Instr_Switch extends Instruccion {
 
                     if(inst instanceof Instr_Continue) return inst;
 
+                    if(inst instanceof Expr_Return) {
+                        inst.setTablaEntorno(newTabla);
+                        return inst;
+                    }
+
                     if(inst === null) return null;
 
                     let resultado = inst.Interpretar(arbol, newTabla);
@@ -100,6 +113,8 @@ class Instr_Switch extends Instruccion {
                     if(resultado instanceof Instr_Break) return resultado;
 
                     if(resultado instanceof Instr_Continue) return resultado;
+
+                    if(resultado instanceof Expr_Return) return resultado;
 
                 }
 

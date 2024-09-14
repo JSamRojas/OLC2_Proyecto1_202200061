@@ -6,10 +6,12 @@ import Arbol from "../Simbolo/Arbol.js";
 import Instr_Break from "../Instrucciones/Instr_Break.js";
 import Instr_Continue from "../Instrucciones/Instr_Continue.js";
 import Instr_DeclaracionStruct from "../Instrucciones/Instr_DeclaracionStruct.js";
+import Instr_Funcion from "../Instrucciones/Instr_Funcion.js";
 
 let tabCount = 0;
 let tabsData = {};
 let numeroError = 0;
+let numeroSimbolo = 0;
 export let ListaSimbolos = [];
 export let ListaErrores = [];
 
@@ -130,6 +132,12 @@ export function Ejecutar(){
                 continue;
             }
 
+            if(element instanceof Instr_Funcion){
+                element.Esglobal = true;
+                ast.addFuncion(element);
+                continue;
+            }
+
             let res = element.Interpretar(ast, tabla);
 
             if(res instanceof Errores){
@@ -151,6 +159,106 @@ export function Ejecutar(){
     }
 }
 
+export function ReporteErrores(){
+    numeroError = 0;
+    let HTML = "<html>\n";
+    HTML += "<head>\n";
+    HTML += "<title>Reporte de Errores</title>\n";
+    HTML += "<style>\n";
+    HTML += "body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }\n";
+    HTML += "h1 { color: #333; }\n";
+    HTML += "table { width: 100%; border-collapse: collapse; margin: 20px 0; }\n";
+    HTML += "th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }\n";
+    HTML += "th { background-color: #f2f2f2; color: #333; }\n";
+    HTML += "tr:nth-child(even) { background-color: #f9f9f9; }\n";
+    HTML += "tr:hover { background-color: #e0e0e0; }\n";
+    HTML += "</style>\n";
+    HTML += "</head>\n";
+    HTML += "<body>\n";
+    HTML += "<h1>Tabla de Errores</h1>\n";
+    HTML += "<table border=\"1\">\n";
+    HTML += "<tr>\n";
+    HTML += "<th>Numero</th>\n";
+    HTML += "<th>Tipo</th>\n";
+    HTML += "<th>Descripcion</th>\n";
+    HTML += "<th>Linea</th>\n";
+    HTML += "<th>Columna</th>\n";
+    HTML += "</tr>\n";
+
+    for (let element of ListaErrores) {
+        HTML += "<tr>\n";
+        HTML += `<td>${++numeroError}</td>\n`;
+        HTML += `<td>${element.getTipo()}</td>\n`;
+        HTML += `<td>${element.getDescripcion()}</td>\n`;
+        HTML += `<td>${element.getLinea()}</td>\n`;
+        HTML += `<td>${element.getColumna()}</td>\n`;
+        HTML += "</tr>\n";
+    }
+
+    HTML += "</table>\n";
+    HTML += "</body>\n";
+    HTML += "</html>\n";
+
+    const blob = new Blob([HTML], { type: 'text/html' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'ReporteErrores.html';
+    link.click();
+}
+
+export function ReporteSimbolos(){
+    numeroSimbolo = 0;
+    let HTML = "<html>\n";
+    HTML += "<head>\n";
+    HTML += "<title>Reporte de Simbolos</title>\n";
+    HTML += "<style>\n";
+    HTML += "body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }\n";
+    HTML += "h1 { color: #333; }\n";
+    HTML += "table { width: 100%; border-collapse: collapse; margin: 20px 0; }\n";
+    HTML += "th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }\n";
+    HTML += "th { background-color: #f2f2f2; color: #333; }\n";
+    HTML += "tr:nth-child(even) { background-color: #f9f9f9; }\n";
+    HTML += "tr:hover { background-color: #e0e0e0; }\n";
+    HTML += "</style>\n";
+    HTML += "</head>\n";
+    HTML += "<body>\n";
+    HTML += "<h1>Tabla de Simbolos</h1>\n";
+    HTML += "<table border=\"1\">\n";
+    HTML += "<tr>\n";
+    HTML += "<th>Numero</th>\n";
+    HTML += "<th>ID</th>\n";
+    HTML += "<th>Tipo (Estructura)</th>\n";
+    HTML += "<th>Tipo (Dato)</th>\n";
+    HTML += "<th>Entorno</th>\n";
+    HTML += "<th>Valor</th>\n";
+    HTML += "<th>Linea</th>\n";
+    HTML += "<th>Columna</th>\n";
+    HTML += "</tr>\n";
+
+    for (let element of ListaSimbolos) {
+        HTML += "<tr>\n";
+        HTML += `<td>${++numeroSimbolo}</td>\n`;
+        HTML += `<td>${element.getNombre()}</td>\n`;
+        HTML += `<td>${element.getTipoEstruct()}</td>\n`;
+        HTML += `<td>${element.getTipo().getTipo()}</td>\n`;
+        HTML += `<td>${element.getEntorno()}</td>\n`;
+        HTML += `<td>${element.getValor()}</td>\n`;
+        HTML += `<td>${element.getLinea()}</td>\n`;
+        HTML += `<td>${element.getColumna()}</td>\n`;
+        HTML += "</tr>\n";
+    }
+
+    HTML += "</table>\n";
+    HTML += "</body>\n";
+    HTML += "</html>\n";
+
+    const blob = new Blob([HTML], { type: 'text/html' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'ReporteSimbolos.html';
+    link.click();
+
+}
 
 export function GuardarArchivo(){
     const activeTab = document.querySelector('.tab.active');

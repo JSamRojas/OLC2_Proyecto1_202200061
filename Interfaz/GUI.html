@@ -14,8 +14,8 @@
             <button onclick="document.getElementById('file-input').click()">Abrir Archivo</button>
             <button onclick="GuardarArchivo()">Guardar Archivo</button>
             <button onclick="Ejecutar()">Ejecutar</button>
-            <button>Reporte de Errores</button>
-            <button>Reporte de Tabla de Simbolos</button>
+            <button onclick="ReporteErrores()">Reporte de Errores</button>
+            <button onclick="ReporteSimbolos()">Reporte de Tabla de Simbolos</button>
             <input type="file" id="file-input" style="display:none" accept=".oak" onchange="loadFile(event)">
         </div>
         <div class="content">
@@ -29,12 +29,14 @@
 
     <script type="module" src="Codigo_GUI.js"></script>
     <script type="module">
-        import { addTab, GuardarArchivo, Ejecutar, loadFile } from './Codigo_GUI.js';
+        import { addTab, GuardarArchivo, Ejecutar, loadFile, ReporteErrores, ReporteSimbolos } from './Codigo_GUI.js';
 
         window.addTab = addTab;
         window.GuardarArchivo = GuardarArchivo;
         window.Ejecutar = Ejecutar;
         window.loadFile = loadFile;
+        window.ReporteErrores = ReporteErrores;
+        window.ReporteSimbolos = ReporteSimbolos;
         
     </script>
 

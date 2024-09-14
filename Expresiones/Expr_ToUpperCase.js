@@ -20,11 +20,11 @@ class Expr_ToUpperCase extends Expresion {
         if(valor === null) return null;
 
         if(this.esMatriz(valor) || Array.isArray(valor)){
-            return new Errores("Semantico", "La funcion toLowerCase no aplica en arrays o matrices", this.Linea, this.Columna);
+            return new Errores("Semantico", "La funcion toUpperCase no aplica en arrays o matrices", this.Linea, this.Columna);
         }
 
         if(this.expresion.Tipo.getTipo() !== "CADENA"){
-            return new Errores("Semantico", "La funcion toLowerCase solo acepta cadenas", this.Linea, this.Columna);
+            return new Errores("Semantico", "La funcion toUpperCase solo acepta cadenas", this.Linea, this.Columna);
         }
 
         return valor.toUpperCase();

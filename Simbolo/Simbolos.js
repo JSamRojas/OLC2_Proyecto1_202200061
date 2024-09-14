@@ -70,6 +70,14 @@ class Simbolos{
         return this.Mutabilidad;
     }
 
+    getEntorno(){
+        return this.Entorno;
+    }
+
+    setEntorno(Entorno){
+        this.Entorno = Entorno;
+    }
+
 }
 
 export default Simbolos;
