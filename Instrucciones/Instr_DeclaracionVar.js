@@ -20,27 +20,6 @@ class Instr_DeclaracionVar extends Instruccion {
 
         if(this.valor === null){
             let valorNuevo = null;
-
-            switch (this.Tipo.getTipo()) {
-                case "ENTERO":
-                    valorNuevo = 0;
-                    break;
-                case "DECIMAL":
-                    valorNuevo = 0.0;
-                    break;
-                case "BOOLEANO":
-                    valorNuevo = true;
-                    break;
-                case "CARACTER":
-                    valorNuevo = '\u0000';
-                    break;
-                case "CADENA":
-                    valorNuevo = "";
-                    break;
-                default:
-                    return new Errores("Semantico", "Tipo de dato no valido", this.Linea, this.Columna);
-            }
-
             newSimbolo = new Simbolos(this.ID, this.Tipo, valorNuevo, "Variable", this.Linea, this.Columna);
 
         } else {

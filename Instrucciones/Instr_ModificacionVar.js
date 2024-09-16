@@ -5,7 +5,6 @@ import DatoNativo from "../Simbolo/DatoNativo.js";
 import Errores from "../Simbolo/Errores.js";
 import Tipo from "../Simbolo/Tipo.js";
 import Simbolos from "../Simbolo/Simbolos.js";
-import { ListaSimbolos, ListaErrores } from "../Interfaz/Codigo_GUI.js";
 
 class Instr_ModificacionVar extends Instruccion{
     constructor(ID, expresion, modificador, Linea, Columna){
@@ -32,6 +31,7 @@ class Instr_ModificacionVar extends Instruccion{
             if(nuevoValor instanceof Errores) return nuevoValor;
 
             if(nuevoValor === null){
+                variable.setValor(null);
                 return null;
             }
 
@@ -45,6 +45,8 @@ class Instr_ModificacionVar extends Instruccion{
                     if(variable.getTipo().getTipo() === "DECIMAL" && this.expresion.Tipo.getTipo() === "ENTERO"){
                         nuevoValor = parseFloat(nuevoValor).toFixed(1);
                     } else {
+                        variable.setValor(null);
+                        variable.setTipo(new Tipo(DatoNativo.VOID));
                         return new Errores("Semantico", "La variable es de tipo " + variable.getTipo().getTipo() + " y el valor asignado es de tipo " + this.expresion.Tipo.getTipo(), this.Linea, this.Columna);
                     }
                 }
@@ -54,18 +56,26 @@ class Instr_ModificacionVar extends Instruccion{
             } else if(variable.getTipoEstruct() === "Array"){
 
                 if(variable.getTipo().getTipo() !== this.expresion.Tipo.getTipo()){
+                    variable.setValor(null);
+                    variable.setTipo(new Tipo(DatoNativo.VOID));
                     return new Errores("Semantico", "La variable es de tipo " + variable.getTipo().getTipo() + " y el valor asignado es de tipo " + this.expresion.Tipo.getTipo(), this.Linea, this.Columna);
                 }
 
                 if(this.esMatriz(nuevoValor)){
+                    variable.setValor(null);
+                    variable.setTipo(new Tipo(DatoNativo.VOID));
                     return new Errores("Semantico", "La variable " + this.ID + " es un arreglo y no se puede asignar una matriz", this.Linea, this.Columna);
                 }
 
                 if(!Array.isArray(nuevoValor)){
+                    variable.setValor(null);
+                    variable.setTipo(new Tipo(DatoNativo.VOID));
                     return new Errores("Semantico", "La variable " + this.ID + " es un arreglo y no se puede asignar un valor", this.Linea, this.Columna);
                 }
 
                 if(nuevoValor.length !== variable.length){
+                    variable.setValor(null);
+                    variable.setTipo(new Tipo(DatoNativo.VOID));
                     return new Errores("Semantico", "La variable " + this.ID + " es un arreglo y no se puede asignar un arreglo de diferente longitud", this.Linea, this.Columna);
                 }
 
@@ -74,10 +84,14 @@ class Instr_ModificacionVar extends Instruccion{
             } else if(variable.getTipoEstruct() === "Matriz"){
 
                 if(variable.getTipo().getTipo() !== this.expresion.Tipo.getTipo()){
+                    variable.setValor(null);
+                    variable.setTipo(new Tipo(DatoNativo.VOID));
                     return new Errores("Semantico", "La variable es de tipo " + variable.getTipo().getTipo() + " y el valor asignado es de tipo " + this.expresion.Tipo.getTipo(), this.Linea, this.Columna);
                 }
 
                 if(!this.esMatriz(nuevoValor)){
+                    variable.setValor(null);
+                    variable.setTipo(new Tipo(DatoNativo.VOID));
                     return new Errores("Semantico", "La variable " + this.ID + " es una matriz y no se le puede asignar un array o un primitivo", this.Linea, this.Columna);
                 }
 
@@ -88,6 +102,8 @@ class Instr_ModificacionVar extends Instruccion{
                 if(dimen_Original.toString() === dimen_Nuevas.toString()){
                     variable.setValor([...nuevoValor]);
                 } else {
+                    variable.setValor(null);
+                    variable.setTipo(new Tipo(DatoNativo.VOID));
                     return new Errores("Semantico", "La variable " + this.ID + " es una matriz y no se le puede asignar una matriz de diferente dimension", this.Linea, this.Column);
                 }
 
@@ -96,6 +112,8 @@ class Instr_ModificacionVar extends Instruccion{
         } else if(this.modificador === "AUMENTO" || this.modificador === "DECREMENTO"){
 
             if(variable.getTipoEstruct() === "Array" || variable.getTipoEstruct() === "Matriz"){
+                variable.setValor(null);
+                variable.setTipo(new Tipo(DatoNativo.VOID));
                 return new Errores("Semantico", "La variable " + this.ID + " es un arreglo o matriz y no se puede aumentar o decrementar", this.Linea, this.Columna);
             }
 
@@ -115,6 +133,8 @@ class Instr_ModificacionVar extends Instruccion{
                                 variable.setValor(parseInt(valorActual,10) + parseInt(nuevoValor,10));
                                 break;
                             } else {
+                                variable.setValor(null);
+                                variable.setTipo(new Tipo(DatoNativo.VOID));
                                 return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y el valor asignado es de tipo " + tipo2, this.Linea, this.Columna);
                             }
                         case "DECIMAL":
@@ -125,6 +145,8 @@ class Instr_ModificacionVar extends Instruccion{
                                 variable.setValor(parseFloat(valorActual).toFixed(1) + parseFloat(nuevoValor));
                                 break;
                             } else {
+                                variable.setValor(null);
+                                variable.setTipo(new Tipo(DatoNativo.VOID));
                                 return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y el valor asignado es de tipo " + tipo2, this.Linea, this.Columna);
                             }
                         case "CADENA":
@@ -132,9 +154,13 @@ class Instr_ModificacionVar extends Instruccion{
                                 variable.setValor(valorActual + nuevoValor);
                                 break;
                             } else {
+                                variable.setValor(null);
+                                variable.setTipo(new Tipo(DatoNativo.VOID));
                                 return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y el valor asignado es de tipo " + tipo2, this.Linea, this.Columna);
                             }
                         default:
+                            variable.setValor(null);
+                            variable.setTipo(new Tipo(DatoNativo.VOID));
                             return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y no se puede aumentar", this.Linea, this.Columna);
                     }
                 break;
@@ -145,6 +171,8 @@ class Instr_ModificacionVar extends Instruccion{
                                 variable.setValor(parseInt(valorActual,10) - parseInt(nuevoValor,10));
                                 break;
                             } else {
+                                variable.setValor(null);
+                                variable.setTipo(new Tipo(DatoNativo.VOID));
                                 return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y el valor asignado es de tipo " + tipo2, this.Linea, this.Columna);
                             }
                         case "DECIMAL":
@@ -155,13 +183,19 @@ class Instr_ModificacionVar extends Instruccion{
                                 variable.setValor(parseFloat(valorActual).toFixed(1) - parseFloat(nuevoValor));
                                 break;
                             } else {
+                                variable.setValor(null);
+                                variable.setTipo(new Tipo(DatoNativo.VOID));
                                 return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y el valor asignado es de tipo " + tipo2, this.Linea, this.Columna);
                             }
                         default:
+                            variable.setValor(null);
+                            variable.setTipo(new Tipo(DatoNativo.VOID));
                             return new Errores("Semantico", "La variable es de tipo " + tipo1 + " y no se puede aumentar", this.Linea, this.Columna);
                     }
                 break;
                 default:
+                    variable.setValor(null);
+                    variable.setTipo(new Tipo(DatoNativo.VOID));
                     return new Errores("Semantico", "El modificador " + this.modificador + " no es valido", this.Linea, this.Columna);
             }
 
@@ -177,6 +211,8 @@ class Instr_ModificacionVar extends Instruccion{
                         variable.setValor(parseInt(valorActual,10) - 1);
                         break;
                     default:
+                        variable.setValor(null);
+                        variable.setTipo(new Tipo(DatoNativo.VOID));
                         return new Errores("Semantico", "El modificador " + this.modificador + " no es valido", this.Linea, this.Columna);
                 }
             } else if(variable.getTipo().getTipo() === "DECIMAL"){
@@ -188,9 +224,13 @@ class Instr_ModificacionVar extends Instruccion{
                         variable.setValor((parseFloat(valorActual) - 1.0).toFixed(1));
                         break;
                     default:
+                        variable.setValor(null);
+                        variable.setTipo(new Tipo(DatoNativo.VOID));
                         return new Errores("Semantico", "El modificador " + this.modificador + " no es valido", this.Linea, this.Columna);
                 }
             } else {
+                variable.setValor(null);
+                variable.setTipo(new Tipo(DatoNativo.VOID));
                 return new Errores("Semantico", "La variable es de tipo " + variable.getTipo().getTipo() + " y no se puede aumentar o decrementar", this.Linea, this.Columna);
             }
 
